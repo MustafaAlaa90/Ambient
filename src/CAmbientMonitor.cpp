@@ -5,6 +5,7 @@ CAmbientMonitor::CAmbientMonitor():
 ,CH4(BOARD,Voltage_Resolution,ADC_Bit_Resolution,CH4AnalogPIN,CH4TYPE)
 ,CO2(CO2PIN,INERTIA,TRIES)
 ,GPS(UBlox_UART)
+,DHT(DHTPIN, DHTTYPE)
 {}
 //-------------------------------------------------------------
 void CAmbientMonitor::COInit()
@@ -22,7 +23,7 @@ void CAmbientMonitor::COInit()
     CO.setR0(calcR0/CO_RL);
 }
 //-------------------------------------------------------------
-void CAmbientMonitor::COInit()
+void CAmbientMonitor::CH4Init()
 {
     CH4.setRegressionMethod(_PPM); //_PPM =  a*ratio^b
     CH4.setA(CH4VAL_A); CH4.setB(CH4VAL_B); // Configurate the ecuation values to get Benzene concentration
@@ -60,12 +61,58 @@ bool CAmbientMonitor::O3Init()
 //------------------------------------------------------------
 void CAmbientMonitor::GPSInit()
 {
-    GPS.UbloxInit(UBlox_baud);
+    GPS.UbloxInit(UBlox_baud,RX,TX);
 }
 //-------------------------------------------------------------
 void CAmbientMonitor::ThinkSpeakInit()
 {
     ThingSpeak.begin(client);
+}
+//-------------------------------------------------------------
+bool CAmbientMonitor::BMEInit()
+{
+    if (!bme.begin()) {
+    // Serial.println(F("Could not find a valid BME680 sensor, check wiring!"));
+    return false;
+  }
+  else
+  {
+    bme.setTemperatureOversampling(BME680_OS_8X);
+    bme.setHumidityOversampling(BME680_OS_2X);
+    bme.setPressureOversampling(BME680_OS_4X);
+    bme.setIIRFilterSize(BME680_FILTER_SIZE_3);
+    bme.setGasHeater(320, 150); // 320*C for 150 ms
+  }
+  return true;
+}
+//-------------------------------------------------------------
+bool CAmbientMonitor::SPSInit()
+{
+    sps30.EnableDebugging(DEBUG);
+    // set pins to use for softserial and Serial1 on ESP32
+    if (TX_PIN != 0 && RX_PIN != 0)
+    {
+        sps30.SetSerialPin(RX_PIN,TX_PIN);
+    }
+    if (! sps30.begin(SP30_COMMS))
+    {
+        return false;
+    }
+    // check for SPS30 connection
+    if (! sps30.probe())
+    {
+        return false;
+    }
+    if (! sps30.reset())
+    {
+        return false;
+    }
+    return true;
+}
+//------------------------------------------------------------
+void CAmbientMonitor::DHTInit()
+{
+    DHT.begin();
 }
 //-------------------------------------------------------------
 void CAmbientMonitor::SetfieldMultiple(float* fieldNRArr,uint8_t ArrSize)
@@ -80,7 +127,6 @@ void CAmbientMonitor::WriteGASSensorsChannel()
 {
     ThingSpeak.writeFields(SECRET_GAS_SENSOR_ID,SECRET_GAS_SENSOR_WRITE_APIKEY);
 }
-//-------------------------------------------------------------
 
 //-------------------------------------------------------------
 float CAmbientMonitor::ReadCOPPM()
@@ -122,3 +168,117 @@ void CAmbientMonitor::ReadGPSInfo(double* lat,double* lng,double* meters)
     GPS.getInfo(lat,lng,meters);
 }
 //--------------------------------------------------------------
+bool CAmbientMonitor::ReadBME(float* temp,uint32_t* pressure,float* humadity,uint32_t* voc)
+{
+    // Tell BME680 to begin measurement.
+  unsigned long endTime = bme.beginReading();
+  if (endTime == 0) {
+    return false;
+  }
+  delay(50); // This represents parallel work.
+  // There's no need to delay() until millis() >= endTime: bme.endReading()
+  // takes care of that. It's okay for parallel work to take longer than
+  // BME680's measurement time.
+
+  // Obtain measurement results from BME680. Note that this operation isn't
+  // instantaneous even if milli() >= endTime due to I2C/SPI latency.
+  if (!bme.endReading()) {
+    return false;
+  }
+  *temp     = bme.temperature;
+  *pressure = bme.pressure / 100.0;
+  *humadity = bme.humidity;
+  *voc      = bme.gas_resistance / 1000.0;
+
+  //Serial.print(bme.readAltitude(SEALEVELPRESSURE_HPA));
+}
+//--------------------------------------------------------------------------
+bool CAmbientMonitor::ReadSPS(float* pm1,float* pm2,float* pm10)
+{
+  uint8_t ret, error_cnt = 0;
+  struct sps_values val;
+
+  // loop to get data
+  do {
+
+    ret = sps30.GetValues(&val);
+
+    // data might not have been ready
+    if (ret == ERR_DATALENGTH){
+
+        if (error_cnt++ > 3) {
+          //ErrtoMess((char *) "Error during reading values: ",ret);
+          return false;
+        }
+        delay(1000);
+    }
+
+    // if other error
+    else if(ret != ERR_OK) {
+     // ErrtoMess((char *) "Error during reading values: ",ret);
+      return false;
+    }
+
+  } while (ret != ERR_OK);
+
+  // only print header first time
+  *pm1  = val.MassPM1;
+  *pm2  = val.MassPM2;
+  *pm10 = val.MassPM10;
+//   Serial.print(val.MassPM1);
+//   Serial.print(F("\t"));
+//   Serial.print(val.MassPM2);
+//   Serial.print(F("\t"));
+//   Serial.print(val.MassPM4);
+//   Serial.print(F("\t"));
+//   Serial.print(val.MassPM10);
+//   Serial.print(F("\t"));
+//   Serial.print(val.NumPM0);
+//   Serial.print(F("\t"));
+//   Serial.print(val.NumPM1);
+//   Serial.print(F("\t"));
+//   Serial.print(val.NumPM2);
+//   Serial.print(F("\t"));
+//   Serial.print(val.NumPM4);
+//   Serial.print(F("\t"));
+//   Serial.print(val.NumPM10);
+//   Serial.print(F("\t"));
+//   Serial.print(val.PartSize);
+//   Serial.print(F("\n"));
+
+  return(true);
+}
+//------------------------------------------------------------
+bool CAmbientMonitor::ReadDHT(float* temp,float* hum)
+{
+  bool ret = true;
+  sensors_event_t event;
+  DHT.temperature().getEvent(&event);
+  if (isnan(event.temperature))
+  {
+    Serial.println(F("Error reading temperature!"));
+    ret= false;
+  }
+  else
+  {
+    Serial.print(F("Temperature: "));
+    Serial.print(event.temperature);
+    Serial.println(F("°C"));
+    *temp = event.temperature;
+  }
+  // Get humidity event and print its value.
+  DHT.humidity().getEvent(&event);
+  if (isnan(event.relative_humidity))
+  {
+    Serial.println(F("Error reading humidity!"));
+    ret = false;
+  }
+  else
+  {
+    Serial.print(F("Humidity: "));
+    Serial.print(event.relative_humidity);
+    Serial.println(F("%"));
+    *hum = event.relative_humidity;
+  }
+}
+//------------------------------------------------------------------

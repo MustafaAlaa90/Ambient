@@ -9,7 +9,7 @@ class CUblox
     public:
         CUblox(uint8_t nr);
         ~CUblox() = default;
-        void UbloxInit(unsigned long nr);
+        void UbloxInit(unsigned long nr, int8_t rxPin=-1, int8_t txPin=-1,uint32_t config=SERIAL_8N1);
         void getInfo(double* lat,double* lng,double* meters);
         uint32_t getfixCount() {return m_gps.sentencesWithFix();}
     private:

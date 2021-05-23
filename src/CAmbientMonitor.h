@@ -2,21 +2,27 @@
 #define _AMBIENT_H
 
 #include "WiFi.h"
-#include "ADXL345.h"
+#include "esp_wps.h"
+#include "SparkFun_ADXL345.h"
 #include "MQUnifiedsensor.h"
 #include "CO2Sensor.h"
 #include "DFRobot_OzoneSensor.h"
-#include "ADXL345.h"
-#include "bme680.h"
+#include <Adafruit_Sensor.h>
+#include "Adafruit_BME680.h"
+#include <DHT.h>
+#include <DHT_U.h>
 #include "ThingSpeak.h"
 #include "CUblox.h"
 #include "sps30.h"
+
 
  /* Common Defines */
 #define BOARD               ("ESP32")
 #define Voltage_Resolution  (3.3)
 #define ADC_Bit_Resolution  (12)
 #define _PPM                (1)
+
+
 
 /* CO Defines */
 #define COTYPE              ("MQ-3")
@@ -68,6 +74,21 @@
 /* UBlox Defines */
 #define UBlox_UART 2
 #define UBlox_baud 9600
+#define TX 17
+#define RX 16
+
+/* SPS Defines */
+#define SP30_COMMS SERIALPORT1
+#define TX_PIN 2
+#define RX_PIN 4
+#define DEBUG 0
+
+/* BME Defines */
+#define SEALEVELPRESSURE_HPA (1013.25)
+
+/* DHT22 Defines */
+#define DHTPIN  27
+#define DHTTYPE DHT22
 
 /* Think Speak Defines & enum */
     /* Channel 1 Defines */
@@ -88,12 +109,16 @@ class CAmbientMonitor
 {
     public: 
         CAmbientMonitor();
-        ~CAmbientMonitor();
+        ~CAmbientMonitor() = default;
         void                COInit();
-        void                CH4Inti();
+        void                CH4Init();
         void                CO2Init();
         bool                O3Init();
         void                GPSInit();
+        bool                BMEInit();
+        void                DHTInit();
+        bool                SPSInit();
+        void                WPSInit();
         void                ThinkSpeakInit();
         void                SetfieldMultiple(float* fieldNRArr,uint8_t ArrSize);
         void                WriteGASSensorsChannel();
@@ -103,13 +128,22 @@ class CAmbientMonitor
         int16_t             ReadO3();
         float               ReadSoundLevel();
         void                ReadGPSInfo(double* lat,double* lng,double* meters);
+        bool                ReadBME(float* temp,uint32_t* pressure,float* humadity,uint32_t* voc);
+        bool                ReadSPS(float* pm1,float* pm2,float* pm10);
+        bool                ReadDHT(float* temp,float* hum);
+
     private:
+        String wpspin2string(uint8_t a[]);
         MQUnifiedsensor     CO;
         MQUnifiedsensor     CH4;
         CO2Sensor           CO2;
         DFRobot_OzoneSensor O3;
-        CUblox              GPS;
+        CUblox              GPS; // UART2
+        Adafruit_BME680     bme; // I2C
+        SPS30 sps30;             // UART1
+        DHT_Unified         DHT;
         WiFiClient          client;
+
 
 };
 

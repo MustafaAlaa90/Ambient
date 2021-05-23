@@ -1,7 +1,7 @@
 #include <esp32-hal.h>
 #define MQ3_A0 36
 #define MAX_ADC_SAMPLING 4095
-#define RL 10000
+#define RL 4700
 void setup()
 {
     Serial.begin(115200);
@@ -27,13 +27,13 @@ void loop()
     sensor_volt = (sensorValue*3.3)/MAX_ADC_SAMPLING;
     //RS_air = ((3.3/sensor_volt)-1)*RL; // omit *RL
     RS_air = ((3.3 - sensor_volt)/sensor_volt) * RL;
-    //R0 = RS_air/60.0; // The ratio of RS/R0 is 60 in a clear air from Graph (Found using WebPlotDigitizer)
-    float concentration = RS_air / 3000;
+    R0 = RS_air/60.0; // The ratio of RS/R0 is 60 in a clear air from Graph (Found using WebPlotDigitizer)
+    //float concentration = RS_air / 3000;
     Serial.print("sensor_volt = ");
     Serial.print(sensor_volt);
     Serial.println("V");
-    Serial.print("concentration = ");
-    Serial.println(concentration);
+    Serial.print("R0 = ");
+    Serial.println(R0);
     delay(1000);
  
 }

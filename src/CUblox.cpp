@@ -7,9 +7,9 @@ CUblox::CUblox(uint8_t nr): m_serial(nr)
 
 }
 //--------------------------------
-void CUblox::UbloxInit( unsigned long baud )
+void CUblox::UbloxInit( unsigned long baud, int8_t rxPin, int8_t txPin, uint32_t config)
 {
-    m_serial.begin(baud);
+    m_serial.begin(baud,config,rxPin,txPin);
 }
 //-----------------------------------------------
 void CUblox::getInfo(double* lat,double* lng,double* meters)
