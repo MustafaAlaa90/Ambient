@@ -16,19 +16,19 @@ void setup()
     Serial.println("Init WPS ...");
     //-----------------------------------------------------------------------
     
-    WiFi.onEvent(WiFiEvent);
-    WiFi.mode(WIFI_MODE_STA);
-    WiFi.disconnect(true);
-    wpsInitConfig();
-    esp_wifi_wps_enable(&config);
-    WiFi.begin();
-    esp_wifi_wps_start(0);
+    // WiFi.onEvent(WiFiEvent);
+    // WiFi.mode(WIFI_MODE_STA);
+    // WiFi.disconnect(true);
+    // wpsInitConfig();
+    // esp_wifi_wps_enable(&config);
+    // WiFi.begin();
+    // esp_wifi_wps_start(0);
    //-------------------------------------------------------------------------
     // Serial.println("Init Gas Sensors .... ");
-    // if(!IntiGasSensors())
-    // {
-    //     Serial.println("Couldn't initialize O3 Sensor");
-    // }
+    if(!IntiGasSensors())
+    {
+        Serial.println("Couldn't initialize O3 Sensor");
+    }
     // Serial.println("Init GPS .... ");
     // ambient.GPSInit();
     // Serial.println("Init BME Sesnor .... ");
@@ -41,7 +41,7 @@ void setup()
     // {
     //     Serial.println("Could not init SPS Sensor ");
     // }
-    ambient.DHTInit();
+    //ambient.DHTInit();
     
     
 
@@ -50,26 +50,29 @@ void setup()
 
 void loop()
 {
-  if(WiFi.status() != WL_CONNECTED)
-  {
-      esp_wifi_wps_start(0);
-  }
+  // if(WiFi.status() != WL_CONNECTED)
+  // {
+  //     esp_wifi_wps_start(0);
+  // }
   //-----------------------------------------
-  float temp = 0,hum = 0;
-  if(ambient.ReadDHT(&temp,&hum))
-  {
-    Serial.printf("Temp = %f , Humidity = %f\n",temp,hum);
-  }
-  delay(2000);
+  // float temp = 0,hum = 0;
+  // if(ambient.ReadDHT(&temp,&hum))
+  // {
+  //   Serial.printf("Temp = %f , Humidity = %f\n",temp,hum);
+  // }
+  float CoPPM = 0;
+  CoPPM = ambient.ReadCOPPM();
+  Serial.printf("CoPPM = %f\n",CoPPM);
+  delay(1000);
 }
 //-----------------------------------------------------------------------------
 bool IntiGasSensors()
 {
     bool Ret=true;
-    ambient.CO2Init();
+    //ambient.CO2Init();
     ambient.COInit();
-    Ret = ambient.O3Init();
-    ambient.CH4Init();
+    //Ret = ambient.O3Init();
+    //ambient.CH4Init();
     return Ret;
 }
 //---------------------------------------------------------------------------

@@ -14,12 +14,13 @@
 #include "ThingSpeak.h"
 #include "CUblox.h"
 #include "sps30.h"
+#include "Adafruit_ADS1X15.h"
 
 
  /* Common Defines */
 #define BOARD               ("ESP32")
 #define Voltage_Resolution  (3.3)
-#define ADC_Bit_Resolution  (12)
+#define ADC_Bit_Resolution  (16)      // external adc
 #define _PPM                (1)
 
 
@@ -138,10 +139,11 @@ class CAmbientMonitor
         MQUnifiedsensor     CH4;
         CO2Sensor           CO2;
         DFRobot_OzoneSensor O3;
-        CUblox              GPS; // UART2
-        Adafruit_BME680     bme; // I2C
-        SPS30 sps30;             // UART1
+        CUblox              GPS;    // UART2
+        Adafruit_BME680     bme;    // I2C
+        SPS30               sps30;  // UART1
         DHT_Unified         DHT;
+        Adafruit_ADS1115    ads;
         WiFiClient          client;
 
 

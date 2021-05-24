@@ -6,25 +6,32 @@ CAmbientMonitor::CAmbientMonitor():
 ,CO2(CO2PIN,INERTIA,TRIES)
 ,GPS(UBlox_UART)
 ,DHT(DHTPIN, DHTTYPE)
-{}
+{
+}
 //-------------------------------------------------------------
 void CAmbientMonitor::COInit()
 {
-    CH4.setRegressionMethod(_PPM); //_PPM =  a*ratio^b
-    CH4.setA(COVAL_A); CH4.setB(COVAL_B); // Configurate the ecuation values to get Benzene concentration
+    ads.begin(); // begin externa adc
+    CO.setRegressionMethod(_PPM); //_PPM =  a*ratio^b
+    CO.setA(COVAL_A); CO.setB(COVAL_B); // Configurate the ecuation values to get co concentration
     CO.init();
     CO.setRL(CO_RL);
     float calcR0 = 0;
     for(int i = 1; i<=10; i ++)
     {
-      CO.update();
+      //CO.update();
+      int16_t adc0 = ads.readADC_SingleEnded(0);
+      float volts0 = ads.computeVolts(adc0);
+      CO.setADC(volts0);
       calcR0 += CO.calibrate(RatioCleanAIRCO);
     }
-    CO.setR0(calcR0/CO_RL);
+    Serial.printf("calcR0 = %f\n",calcR0);
+    CO.setR0(calcR0/10);
 }
 //-------------------------------------------------------------
 void CAmbientMonitor::CH4Init()
 {
+    ads.begin(); // begin externa adc
     CH4.setRegressionMethod(_PPM); //_PPM =  a*ratio^b
     CH4.setA(CH4VAL_A); CH4.setB(CH4VAL_B); // Configurate the ecuation values to get Benzene concentration
     CH4.init();
@@ -32,7 +39,10 @@ void CAmbientMonitor::CH4Init()
     float calcR0 = 0;
     for(int i = 1; i<=10; i ++)
     {
-      CH4.update();
+      //CH4.update();
+      int16_t adc2 = ads.readADC_SingleEnded(2);
+      float volts2 = ads.computeVolts(adc2);
+      CH4.setADC(volts2);
       calcR0 += CH4.calibrate(RatioCleanAIRCH4);
     }
     CH4.setR0(calcR0/CH4_RL);
@@ -131,14 +141,29 @@ void CAmbientMonitor::WriteGASSensorsChannel()
 //-------------------------------------------------------------
 float CAmbientMonitor::ReadCOPPM()
 {
-    CO.update();
-    return CO.readSensor();
+    //CO.update();
+    ads.begin(); // begin externa adc
+    int16_t adc0 = ads.readADC_SingleEnded(0);
+    float volts0 = ads.computeVolts(adc0);
+    Serial.printf("volts0 = %f\n",volts0);
+    CO.setADC(volts0);
+    float co = CO.readSensor();
+    Serial.printf("co = %f\n",co);
+    return co;
 }
 //------------------------------------------------------------
 float CAmbientMonitor::ReadCH4PPM()
 {
-    CH4.update();
-    return CH4.readSensor();
+    //CH4.update();
+    //return CH4.readSensor();
+    ads.begin(); // begin externa adc
+    int16_t adc2 = ads.readADC_SingleEnded(2);
+    float volts2 = ads.computeVolts(adc2);
+    Serial.printf("volts0 = %f\n",volts2);
+    CO.setADC(volts2);
+    float ch4 = CH4.readSensor();
+    Serial.printf("co = %f\n",ch4);
+    return ch4;
 }
 //-----------------------------------------------------------
 double CAmbientMonitor::ReadCO2PPM()
