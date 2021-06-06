@@ -1,15 +1,15 @@
 #include "CO2Sensor.h"
 
 // CO2 sensor readings
-#define CO2SENSOR_DEBUG true
+#define CO2SENSOR_DEBUG false
 
 const int co2_b = 600;
 const int co2_d = 400;
 
 #define CO2_LOW 600
 #define CO2_HIGHT 1000
-#define VREF      3300.0
-#define Samples 4096.0
+//#define VREF      3300.0
+//#define Samples 4096.0
 
 CO2Sensor::CO2Sensor(int analogPin){
   _inertia = 0.99;
@@ -34,7 +34,7 @@ double CO2Sensor::read(){
      v += analogRead(_analogPin);
      delay(2);
   }
-  _co2_v = (1-_inertia)*(v*VREF)/(Samples*_tries)+_co2_v*_inertia;
+  _co2_v = (1-_inertia)*(v*m_vref)/(m_samples*_tries)+_co2_v*_inertia;
 
   double co2_exp = (_co2_a-_co2_v)/co2_b;
 
@@ -94,4 +94,14 @@ int CO2Sensor::getGreenLevel(){
 
 int CO2Sensor::getRedLevel(){
   return 255-_greenLevel;
+}
+//-------------------------------------
+void CO2Sensor::SetVREF(float vref)
+{
+  m_vref = vref;
+}
+//-------------------------------------
+void CO2Sensor::SetSamples(int samples)
+{
+  m_samples = samples;
 }

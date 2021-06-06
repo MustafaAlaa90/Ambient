@@ -6,7 +6,7 @@ void setup()
    
     Serial.begin(115200);
     float R0 = 3000;
-    uint8_t pin = 36;
+    uint8_t pin = 34;
     float m = -0.754896547;
     float b = 1.996459667;
     mq3.Initialize(pin,R0,b,m);

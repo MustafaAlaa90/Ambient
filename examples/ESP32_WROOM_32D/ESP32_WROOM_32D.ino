@@ -60,7 +60,7 @@ void setup()
   delay(10);
 
   //Set math model to calculate the PPM concentration and the value of constants
-  MQ3.setRegressionMethod(1); //_PPM =  a*ratio^b
+  MQ3.setRegressionMethod(0); //_PPM =  a*ratio^b
   MQ3.setA(0.3934); MQ3.setB(-1.504); // Configurate the ecuation values to get alcohol concentration
   
 /*

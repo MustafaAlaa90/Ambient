@@ -1,6 +1,7 @@
 #ifndef _AMBIENT_H
 #define _AMBIENT_H
 
+
 #include "WiFi.h"
 #include "esp_wps.h"
 #include "SparkFun_ADXL345.h"
@@ -27,7 +28,7 @@
 
 /* CO Defines */
 #define COTYPE              ("MQ-3")
-#define COAnalogPIN         (36)
+#define CO_ADC_PIN          (0)
 #define RatioCleanAIRCO     (60)
 #define COVAL_A             (521853)
 #define COVAL_B             (-3.821) 
@@ -35,7 +36,7 @@
 
 /* CH4 Defines */
 #define CH4TYPE             ("MQ-5")
-#define CH4AnalogPIN        (35)
+#define CH4_ADC_PIN         (2)
 #define RatioCleanAIRCH4    (6.5)
 #define CH4VAL_A            (177.65)
 #define CH4VAL_B            (-2.56)
@@ -44,9 +45,9 @@
 /* CO2 Defines */
 #define CO2_LOW             600
 #define CO2_HIGHT           1000
-#define VREF                3300.0
-#define Samples             4096.0
-#define CO2PIN              34
+#define CO2VREF                3300.0
+#define CO2Samples          4096
+#define CO2PIN              39
 #define INERTIA             0.99
 #define TRIES               100           
 
@@ -95,6 +96,8 @@
     /* Channel 1 Defines */
     #define SECRET_GAS_SENSOR_ID            1326711			
     #define SECRET_GAS_SENSOR_WRITE_APIKEY  "9BYJUOIV17BZQKVC"
+    #define GAS_SENSOR_READING_SIZE         8
+
     typedef enum {
         Gas_Sensor_field_CO =1,
         Gas_Sensor_field_CO2,
@@ -111,6 +114,24 @@ class CAmbientMonitor
     public: 
         CAmbientMonitor();
         ~CAmbientMonitor() = default;
+        bool                InitGasSensorChannel();
+        bool                InitAirQualityChannel();
+        bool                InitMovementChannel();
+
+        void                ReadGasSensorChannel();
+        bool                ReadAirQualityChannel();
+        bool                ReadMovementChannel();
+        
+        bool                WriteGASSensorsChannel();
+        bool                WriteAirQualityChannel();
+        bool                WriteMovementChannel();
+        
+        bool                ConnectWIFI(const char* ssid, const char* pass );
+        bool                IsWiFiConnected();
+
+        bool                InitSDcard();
+        std::string         ReadFromScCard(std::string fileDir);
+        bool                WriteToSDcrd(std::string fileDir,std::string val);
         void                COInit();
         void                CH4Init();
         void                CO2Init();
@@ -122,11 +143,11 @@ class CAmbientMonitor
         void                WPSInit();
         void                ThinkSpeakInit();
         void                SetfieldMultiple(float* fieldNRArr,uint8_t ArrSize);
-        void                WriteGASSensorsChannel();
+        
         float               ReadCOPPM();
         float               ReadCH4PPM();
         double              ReadCO2PPM();
-        int16_t             ReadO3();
+        float             ReadO3();
         float               ReadSoundLevel();
         void                ReadGPSInfo(double* lat,double* lng,double* meters);
         bool                ReadBME(float* temp,uint32_t* pressure,float* humadity,uint32_t* voc);
@@ -145,6 +166,7 @@ class CAmbientMonitor
         DHT_Unified         DHT;
         Adafruit_ADS1115    ads;
         WiFiClient          client;
+        float               m_GasSensorChReading[GAS_SENSOR_READING_SIZE];
 
 
 };

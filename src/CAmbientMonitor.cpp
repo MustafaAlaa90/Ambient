@@ -1,38 +1,60 @@
 #include "CAmbientMonitor.h"
 //--------------------------------------------------------------------------
 CAmbientMonitor::CAmbientMonitor():
- CO(BOARD,Voltage_Resolution,ADC_Bit_Resolution,COAnalogPIN,COTYPE)
-,CH4(BOARD,Voltage_Resolution,ADC_Bit_Resolution,CH4AnalogPIN,CH4TYPE)
+ CO(BOARD,Voltage_Resolution,ADC_Bit_Resolution,CO_ADC_PIN,COTYPE)
+,CH4(BOARD,Voltage_Resolution,ADC_Bit_Resolution,CH4_ADC_PIN,CH4TYPE)
 ,CO2(CO2PIN,INERTIA,TRIES)
 ,GPS(UBlox_UART)
 ,DHT(DHTPIN, DHTTYPE)
 {
 }
+//-----------------------------------------------------------
+bool CAmbientMonitor::InitGasSensorChannel()
+{
+  bool Ret=true;
+  Serial.printf("initialize CO2 ...\n");
+  CO2Init();
+  Serial.printf("initialize CO ...\n");
+  COInit();
+  Serial.printf("initialize O3 ...\n");
+  Ret = O3Init();
+  Serial.printf("initialize CH4 ...\n");
+  CH4Init();
+  memset(m_GasSensorChReading,0,GAS_SENSOR_READING_SIZE);
+  return Ret;
+}
 //-------------------------------------------------------------
 void CAmbientMonitor::COInit()
 {
+    Serial.printf("Begin ADC Driver\n");
     ads.begin(); // begin externa adc
+    Serial.printf("set CO regression mode to %d\n",_PPM);
     CO.setRegressionMethod(_PPM); //_PPM =  a*ratio^b
+    Serial.printf("Set CO point a = %d , CO point b = %d\n",COVAL_A,COVAL_B);
     CO.setA(COVAL_A); CO.setB(COVAL_B); // Configurate the ecuation values to get co concentration
-    CO.init();
+    //CO.init();
+    Serial.printf("set CO RL value %d\n",CO_RL);
     CO.setRL(CO_RL);
     float calcR0 = 0;
     for(int i = 1; i<=10; i ++)
     {
       //CO.update();
-      int16_t adc0 = ads.readADC_SingleEnded(0);
+      int16_t adc0 = ads.readADC_SingleEnded(CO_ADC_PIN);
       float volts0 = ads.computeVolts(adc0);
       CO.setADC(volts0);
       calcR0 += CO.calibrate(RatioCleanAIRCO);
     }
-    Serial.printf("calcR0 = %f\n",calcR0);
     CO.setR0(calcR0/10);
+    Serial.printf("Final CO_R0 = %f\n",calcR0);
 }
 //-------------------------------------------------------------
 void CAmbientMonitor::CH4Init()
 {
+    Serial.printf("Begin ADC Driver\n");
     ads.begin(); // begin externa adc
+    Serial.printf("set CH4 regression mode to %d\n",_PPM);
     CH4.setRegressionMethod(_PPM); //_PPM =  a*ratio^b
+    Serial.printf("Set CH4 point a = %d , CH4 point b = %d\n",CH4VAL_A,CH4VAL_B);
     CH4.setA(CH4VAL_A); CH4.setB(CH4VAL_B); // Configurate the ecuation values to get Benzene concentration
     CH4.init();
     CH4.setRL(CH4_RL);
@@ -40,23 +62,29 @@ void CAmbientMonitor::CH4Init()
     for(int i = 1; i<=10; i ++)
     {
       //CH4.update();
-      int16_t adc2 = ads.readADC_SingleEnded(2);
+      int16_t adc2 = ads.readADC_SingleEnded(CH4_ADC_PIN);
       float volts2 = ads.computeVolts(adc2);
       CH4.setADC(volts2);
       calcR0 += CH4.calibrate(RatioCleanAIRCH4);
     }
-    CH4.setR0(calcR0/CH4_RL);
+    CH4.setR0(calcR0/10);
+    Serial.printf("Final CH4_R0 = %f\n",calcR0);
 }
 //-------------------------------------------------------------
 void CAmbientMonitor::CO2Init()
 {
+    Serial.printf("Setting co2 samples = %d, Vref = %f\n",CO2Samples,CO2VREF);
+    CO2.SetVREF(CO2VREF);
+    CO2.SetSamples(CO2Samples);
+    Serial.printf("Caliberating Co2 sensor ... \n");
     CO2.calibrate();
 }
 //-------------------------------------------------------------
 bool CAmbientMonitor::O3Init()
 {
     bool Ret=true;
-    uint8_t trials;
+    uint8_t trials = 0;
+    Serial.printf("Begin Ozone I2C bus on address %X\n",Ozone_IICAddress);
     while(!O3.begin(Ozone_IICAddress) || trials>3)
     {
         delay(1000);
@@ -66,7 +94,17 @@ bool CAmbientMonitor::O3Init()
        MEASURE_MODE_AUTOMATIC            // active  mode
        MEASURE_MODE_PASSIVE              // passive mode
 */
-    O3.SetModes(MEASURE_MODE_PASSIVE);
+    if(trials  < 3)
+    {
+      Serial.printf("Setting Ozone sensor to measure passive mode\n");
+      O3.SetModes(MEASURE_MODE_PASSIVE);
+    }
+    else
+    {
+      Ret = false;
+      Serial.printf("Failed to begin Ozone I2C bus on address %X\n",Ozone_IICAddress);
+    }
+    return Ret;
 }
 //------------------------------------------------------------
 void CAmbientMonitor::GPSInit()
@@ -125,30 +163,52 @@ void CAmbientMonitor::DHTInit()
     DHT.begin();
 }
 //-------------------------------------------------------------
-void CAmbientMonitor::SetfieldMultiple(float* fieldNRArr,uint8_t ArrSize)
+void CAmbientMonitor::SetfieldMultiple(float* channelArr,uint8_t ArrSize)
 {
     for (uint8_t i=1;i<=ArrSize;i++)
     {
-        ThingSpeak.setField(i,fieldNRArr[i-1]);
+        ThingSpeak.setField(i,channelArr[i-1]);
     }
 }
 //------------------------------------------------------------
-void CAmbientMonitor::WriteGASSensorsChannel()
+bool CAmbientMonitor::WriteGASSensorsChannel()
 {
-    ThingSpeak.writeFields(SECRET_GAS_SENSOR_ID,SECRET_GAS_SENSOR_WRITE_APIKEY);
+    bool Ret = true;
+    if(ThingSpeak.writeFields(SECRET_GAS_SENSOR_ID,SECRET_GAS_SENSOR_WRITE_APIKEY) == 200 )
+    {
+      Serial.printf("Gas Sensors value wrote successfully to ThingSpeak\n");
+    }
+    else
+    {
+      Serial.printf("Failed to Write Gas Sensors value to ThingSpeak\n");
+      Ret = false;
+    }
+    return Ret;
 }
-
+//-------------------------------------------------------------
+void CAmbientMonitor::ReadGasSensorChannel()
+{
+  m_GasSensorChReading[Gas_Sensor_field_CO-1] =  ReadCOPPM();
+  m_GasSensorChReading[Gas_Sensor_field_CO2-1] = (float) ReadCO2PPM();
+  m_GasSensorChReading[Gas_Sensor_field_CH4-1] = ReadCH4PPM();
+  m_GasSensorChReading[Gas_Sensor_field_O3-1] =  ReadO3();
+  Serial.printf("O3 PPM after reading %f\n",m_GasSensorChReading[Gas_Sensor_field_O3-1]);
+  SetfieldMultiple(m_GasSensorChReading,GAS_SENSOR_READING_SIZE);
+  
+}
 //-------------------------------------------------------------
 float CAmbientMonitor::ReadCOPPM()
 {
     //CO.update();
+    Serial.printf("Begin ADC Driver ...\n");
     ads.begin(); // begin externa adc
+    Serial.printf("Read CO from ADC Driver\n");
     int16_t adc0 = ads.readADC_SingleEnded(0);
     float volts0 = ads.computeVolts(adc0);
-    Serial.printf("volts0 = %f\n",volts0);
+    Serial.printf("CO volt = %f\n",volts0);
     CO.setADC(volts0);
     float co = CO.readSensor();
-    Serial.printf("co = %f\n",co);
+    Serial.printf("CO PPM = %f\n",co);
     return co;
 }
 //------------------------------------------------------------
@@ -156,24 +216,32 @@ float CAmbientMonitor::ReadCH4PPM()
 {
     //CH4.update();
     //return CH4.readSensor();
+    Serial.printf("Begin ADC Driver ...\n");
     ads.begin(); // begin externa adc
+    Serial.printf("Read CH4 from ADC Driver\n");
     int16_t adc2 = ads.readADC_SingleEnded(2);
     float volts2 = ads.computeVolts(adc2);
-    Serial.printf("volts0 = %f\n",volts2);
+    Serial.printf("CH4 volts = %f\n",volts2);
     CO.setADC(volts2);
     float ch4 = CH4.readSensor();
-    Serial.printf("co = %f\n",ch4);
+    Serial.printf("CH4 PPM = %f\n",ch4);
     return ch4;
 }
 //-----------------------------------------------------------
 double CAmbientMonitor::ReadCO2PPM()
 {
-    return CO2.read();
+    Serial.printf("Read CO2 PPM ... \n");
+    double co2 = CO2.read();
+    Serial.printf("CO2 PPM = %f\n",co2);
+    return co2;
 }
 //-----------------------------------------------------------
-int16_t CAmbientMonitor::ReadO3()
+float CAmbientMonitor::ReadO3()
 {
-    return O3.ReadOzoneData(COLLECT_NUMBER);
+    Serial.printf("Reading OZONE ...\n");
+    int16_t o3 = O3.ReadOzoneData(COLLECT_NUMBER);
+    Serial.printf("O3 PPB = %d\n",o3);
+    return o3/1000.0;
 }
 //-----------------------------------------------------------
 float CAmbientMonitor::ReadSoundLevel()
@@ -307,3 +375,12 @@ bool CAmbientMonitor::ReadDHT(float* temp,float* hum)
   }
 }
 //------------------------------------------------------------------
+bool CAmbientMonitor::ConnectWIFI(const char* ssid, const char* pass )
+{
+  return WiFi.begin(ssid,pass) == WL_CONNECTED;
+}
+//------------------------------------------------------------------
+bool CAmbientMonitor::IsWiFiConnected()
+{
+  return WiFi.status() == WL_CONNECTED;
+}

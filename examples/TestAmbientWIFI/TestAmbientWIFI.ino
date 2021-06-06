@@ -1,6 +1,7 @@
 #include "CAmbientMonitor.h"
 
 CAmbientMonitor ambient;
+bool connected = false;
 /* WPS Varaibels */
 static esp_wps_config_t config;
 #define ESP_WPS_MODE      WPS_TYPE_PBC
@@ -13,9 +14,8 @@ void setup()
 {
     Serial.begin(115200);
     Serial.println("Starting AmbienMonitor");
-    Serial.println("Init WPS ...");
     //-----------------------------------------------------------------------
-    
+    // Serial.println("Init WPS ...");
     // WiFi.onEvent(WiFiEvent);
     // WiFi.mode(WIFI_MODE_STA);
     // WiFi.disconnect(true);
@@ -24,10 +24,13 @@ void setup()
     // WiFi.begin();
     // esp_wifi_wps_start(0);
    //-------------------------------------------------------------------------
-    // Serial.println("Init Gas Sensors .... ");
-    if(!IntiGasSensors())
+   Serial.printf("Init thingspeak client ...\n");
+   ambient.ThinkSpeakInit();
+   //-------------------------------------------------------------------------
+    Serial.println("Init Gas Sensors channel .... \n");
+    if(!ambient.InitGasSensorChannel())
     {
-        Serial.println("Couldn't initialize O3 Sensor");
+        Serial.println("Couldn't initialize O3 Sensor\n");
     }
     // Serial.println("Init GPS .... ");
     // ambient.GPSInit();
@@ -45,35 +48,30 @@ void setup()
     
     
 
-
+  Serial.printf("Waiting for Gas Sensor to heat up ....\n");
+  delay(2000);
 }
 
 void loop()
 {
-  // if(WiFi.status() != WL_CONNECTED)
-  // {
-  //     esp_wifi_wps_start(0);
-  // }
+  if(!ambient.IsWiFiConnected())
+  {
+    if(ambient.ConnectWIFI("Esraa","Esraa+28121995"))
+    {
+      connected = true;
+    }
+    else
+    {
+      Serial.printf("Could not connect to wifi network ... reading will be saved to SD Card\n");
+    }
+  }
   //-----------------------------------------
-  // float temp = 0,hum = 0;
-  // if(ambient.ReadDHT(&temp,&hum))
-  // {
-  //   Serial.printf("Temp = %f , Humidity = %f\n",temp,hum);
-  // }
-  float CoPPM = 0;
-  CoPPM = ambient.ReadCOPPM();
-  Serial.printf("CoPPM = %f\n",CoPPM);
-  delay(1000);
-}
-//-----------------------------------------------------------------------------
-bool IntiGasSensors()
-{
-    bool Ret=true;
-    //ambient.CO2Init();
-    ambient.COInit();
-    //Ret = ambient.O3Init();
-    //ambient.CH4Init();
-    return Ret;
+  Serial.printf("Reading Gas Sensors values ... \n");
+  ambient.ReadGasSensorChannel();
+  Serial.printf("Write Gas Sensors values to ThingSpeak\n");
+  ambient.WriteGASSensorsChannel();
+  delay(15000);
+
 }
 //---------------------------------------------------------------------------
 void WiFiEvent(WiFiEvent_t event, system_event_info_t info){

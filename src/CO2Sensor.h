@@ -13,6 +13,8 @@ class CO2Sensor
   public:
     CO2Sensor(int analogPin);
     CO2Sensor(int analogPin, float inertia, int tries);
+    void SetVREF(float vref);
+    void SetSamples(int samples);
     double read();
     void calibrate();
 
@@ -31,6 +33,8 @@ class CO2Sensor
     int _greenLevel;
     double _co2_a;
     double _co2ppm;
+    float  m_vref;
+    int    m_samples;
 };
 
 #endif
