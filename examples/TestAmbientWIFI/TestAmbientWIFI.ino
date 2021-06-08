@@ -27,27 +27,16 @@ void setup()
    Serial.printf("Init thingspeak client ...\n");
    ambient.ThinkSpeakInit();
    //-------------------------------------------------------------------------
-    Serial.println("Init Gas Sensors channel .... \n");
-    if(!ambient.InitGasSensorChannel())
-    {
-        Serial.println("Couldn't initialize O3 Sensor\n");
-    }
-    // Serial.println("Init GPS .... ");
-    // ambient.GPSInit();
-    // Serial.println("Init BME Sesnor .... ");
-    // if(!ambient.BMEInit())
-    // {
-    //     Serial.println("Could not init BME Sensor ");
-    // }
-    // Serial.println("Init SPS Sesnor .... ");
-    // if(!ambient.SPSInit())
-    // {
-    //     Serial.println("Could not init SPS Sensor ");
-    // }
-    //ambient.DHTInit();
-    
-    
-
+   Serial.println("Init Gas Sensors channel .... \n");
+   if(!ambient.InitGasSensorChannel())
+   {
+    Serial.println("Couldn't initialize O3 Sensor\n");
+   }
+   Serial.println("Init Air Quality channel .... \n");
+   if(!ambient.InitAirQualityChannel())
+   {
+    Serial.println("Couldn't initialize Air Quality channel\n");
+   }
   Serial.printf("Waiting for Gas Sensor to heat up ....\n");
   delay(2000);
 }
@@ -70,6 +59,12 @@ void loop()
   ambient.ReadGasSensorChannel();
   Serial.printf("Write Gas Sensors values to ThingSpeak\n");
   ambient.WriteGASSensorsChannel();
+  Serial.printf("Waiting 15 sec interval\n");
+  delay(15000);
+  Serial.printf("Reading Air Quality values ... \n");
+  ambient.ReadAirQualityChannel();
+  Serial.printf("Write Air Quality values to ThingSpeak\n");
+  ambient.WriteAirQualityChannel();
   delay(15000);
 
 }

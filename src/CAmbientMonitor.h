@@ -108,6 +108,21 @@
         Gas_Sensor_field_SO2
     } gas_sensors_channel_fields;
 
+/* Channel 2 Defines */
+    #define SECRET_AIR_QUALITY_ID            1377777			
+    #define SECRET_AIR_QUALITY_WRITE_APIKEY  "WGTCPR59WO2C9Y4K"
+    #define AIR_QUALITY_READING_SIZE         8
+
+    typedef enum {
+        Air_Quality_field_PM1 =1,
+        Air_Quality_field_PM25,
+        Air_Quality_field_PM4,
+        Air_Quality_field_PM10,
+        Air_Quality_field_TEMP,
+        Air_Quality_field_PRESSURE,
+        Air_Quality_field_HUMIDITY,
+        Air_Quality_field_TVOC,
+    } Air_Quality_channel_fields;
 
 class CAmbientMonitor
 {
@@ -147,11 +162,11 @@ class CAmbientMonitor
         float               ReadCOPPM();
         float               ReadCH4PPM();
         double              ReadCO2PPM();
-        float             ReadO3();
+        float               ReadO3();
         float               ReadSoundLevel();
         void                ReadGPSInfo(double* lat,double* lng,double* meters);
-        bool                ReadBME(float* temp,uint32_t* pressure,float* humadity,uint32_t* voc);
-        bool                ReadSPS(float* pm1,float* pm2,float* pm10);
+        bool                ReadBME(float* pressure,float* voc);
+        bool                ReadSPS(float* pm1,float* pm2,float* pm4,float* pm10);
         bool                ReadDHT(float* temp,float* hum);
 
     private:
@@ -167,6 +182,7 @@ class CAmbientMonitor
         Adafruit_ADS1115    ads;
         WiFiClient          client;
         float               m_GasSensorChReading[GAS_SENSOR_READING_SIZE];
+        float               m_AirQualitySensorChReading[AIR_QUALITY_READING_SIZE];
 
 
 };

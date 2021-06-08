@@ -23,6 +23,27 @@ bool CAmbientMonitor::InitGasSensorChannel()
   memset(m_GasSensorChReading,0,GAS_SENSOR_READING_SIZE);
   return Ret;
 }
+//------------------------------------------------------------
+bool CAmbientMonitor::InitAirQualityChannel()
+{
+  bool Ret=true;
+  Serial.printf("initialize SPS ...\n");
+  if(!SPSInit())
+  {
+    Serial.printf("Failed to initialize SPS\n");
+    Ret = false;
+  }
+  Serial.printf("initialize BME ...\n");
+  if(!BMEInit())
+  {
+    Serial.printf("Failed to initialize BME\n");
+    Ret = false;
+  }
+  Serial.printf("initialize DHT ....\n");
+  DHTInit();
+  memset(m_AirQualitySensorChReading,0,AIR_QUALITY_READING_SIZE);
+  return Ret;
+}
 //-------------------------------------------------------------
 void CAmbientMonitor::COInit()
 {
@@ -120,7 +141,7 @@ void CAmbientMonitor::ThinkSpeakInit()
 bool CAmbientMonitor::BMEInit()
 {
     if (!bme.begin()) {
-    // Serial.println(F("Could not find a valid BME680 sensor, check wiring!"));
+    Serial.printf("Could not find a valid BME680 sensor, check wiring!\n");
     return false;
   }
   else
@@ -185,6 +206,21 @@ bool CAmbientMonitor::WriteGASSensorsChannel()
     }
     return Ret;
 }
+//--------------------------------------------------------------
+bool CAmbientMonitor::WriteAirQualityChannel()
+{
+  bool Ret = true;
+  if(ThingSpeak.writeFields(SECRET_AIR_QUALITY_ID,SECRET_AIR_QUALITY_WRITE_APIKEY) == 200 )
+  {
+    Serial.printf("Air Quality value wrote successfully to ThingSpeak\n");
+  }
+  else
+  {
+    Serial.printf("Failed to Write Air Quality value to ThingSpeak\n");
+    Ret = false;
+  }
+  return Ret;
+}
 //-------------------------------------------------------------
 void CAmbientMonitor::ReadGasSensorChannel()
 {
@@ -192,9 +228,38 @@ void CAmbientMonitor::ReadGasSensorChannel()
   m_GasSensorChReading[Gas_Sensor_field_CO2-1] = (float) ReadCO2PPM();
   m_GasSensorChReading[Gas_Sensor_field_CH4-1] = ReadCH4PPM();
   m_GasSensorChReading[Gas_Sensor_field_O3-1] =  ReadO3();
-  Serial.printf("O3 PPM after reading %f\n",m_GasSensorChReading[Gas_Sensor_field_O3-1]);
   SetfieldMultiple(m_GasSensorChReading,GAS_SENSOR_READING_SIZE);
   
+}
+//-----------------------------------------------------------
+bool CAmbientMonitor::ReadAirQualityChannel()
+{
+  float pm1,pm2,pm4,pm10;
+  if(ReadSPS(&pm1,&pm2,&pm4,&pm10))
+  {
+    m_AirQualitySensorChReading[Air_Quality_field_PM1-1] = pm1;
+    m_AirQualitySensorChReading[Air_Quality_field_PM25-1] = pm2;
+    m_AirQualitySensorChReading[Air_Quality_field_PM4-1] = pm4;
+    m_AirQualitySensorChReading[Air_Quality_field_PM10-1] = pm10;
+  }
+  float temp,humd;
+  if(ReadDHT(&temp,&humd))
+  {
+    m_AirQualitySensorChReading[Air_Quality_field_TEMP-1] = temp;
+    m_AirQualitySensorChReading[Air_Quality_field_HUMIDITY-1] = humd;
+  }
+  float pressure,tvoc;
+  if(ReadBME(&pressure,&tvoc))
+  {
+    // Serial.printf("pressure = %f, tvoc = %f\n",pressure,tvoc);
+    m_AirQualitySensorChReading[Air_Quality_field_PRESSURE-1] = pressure;
+    m_AirQualitySensorChReading[Air_Quality_field_TVOC-1] = tvoc;
+  }
+  // for(int i=0;i<AIR_QUALITY_READING_SIZE;i++)
+  // {
+  //   Serial.printf("Field = %f\n",m_AirQualitySensorChReading[i]);
+  // }
+  SetfieldMultiple(m_AirQualitySensorChReading,AIR_QUALITY_READING_SIZE);
 }
 //-------------------------------------------------------------
 float CAmbientMonitor::ReadCOPPM()
@@ -261,11 +326,13 @@ void CAmbientMonitor::ReadGPSInfo(double* lat,double* lng,double* meters)
     GPS.getInfo(lat,lng,meters);
 }
 //--------------------------------------------------------------
-bool CAmbientMonitor::ReadBME(float* temp,uint32_t* pressure,float* humadity,uint32_t* voc)
+bool CAmbientMonitor::ReadBME(float* pressure, float* voc)
 {
     // Tell BME680 to begin measurement.
+    Serial.printf("Begin BME Readings .... \n");
   unsigned long endTime = bme.beginReading();
   if (endTime == 0) {
+    Serial.printf("Failed to begin BME Readings\n");
     return false;
   }
   delay(50); // This represents parallel work.
@@ -275,25 +342,26 @@ bool CAmbientMonitor::ReadBME(float* temp,uint32_t* pressure,float* humadity,uin
 
   // Obtain measurement results from BME680. Note that this operation isn't
   // instantaneous even if milli() >= endTime due to I2C/SPI latency.
+  Serial.printf("End BME Reading Period ... \n");
   if (!bme.endReading()) {
+    Serial.printf("Failed to End BME Reading Period\n");
     return false;
   }
-  *temp     = bme.temperature;
   *pressure = bme.pressure / 100.0;
-  *humadity = bme.humidity;
   *voc      = bme.gas_resistance / 1000.0;
-
+  Serial.printf("Pressure = %f hPa , TVOC = %f KOhms\n",*pressure,*voc);
+  return true;
   //Serial.print(bme.readAltitude(SEALEVELPRESSURE_HPA));
 }
 //--------------------------------------------------------------------------
-bool CAmbientMonitor::ReadSPS(float* pm1,float* pm2,float* pm10)
+bool CAmbientMonitor::ReadSPS(float* pm1,float* pm2,float* pm4,float* pm10)
 {
   uint8_t ret, error_cnt = 0;
   struct sps_values val;
-
+  
   // loop to get data
   do {
-
+    Serial.printf("Getting SPS Vales .... Trial = %d \n",error_cnt+1);
     ret = sps30.GetValues(&val);
 
     // data might not have been ready
@@ -309,6 +377,7 @@ bool CAmbientMonitor::ReadSPS(float* pm1,float* pm2,float* pm10)
     // if other error
     else if(ret != ERR_OK) {
      // ErrtoMess((char *) "Error during reading values: ",ret);
+      Serial.printf("Unexpected erro while reading SPS Values\n");
       return false;
     }
 
@@ -317,7 +386,9 @@ bool CAmbientMonitor::ReadSPS(float* pm1,float* pm2,float* pm10)
   // only print header first time
   *pm1  = val.MassPM1;
   *pm2  = val.MassPM2;
+  *pm4  = val.MassPM4;
   *pm10 = val.MassPM10;
+  Serial.printf("PM1 = %f , PM2.5 = %f , PM4 = %f, PM10 = %f\n",*pm1,*pm2,*pm4,*pm10);
 //   Serial.print(val.MassPM1);
 //   Serial.print(F("\t"));
 //   Serial.print(val.MassPM2);
@@ -349,30 +420,26 @@ bool CAmbientMonitor::ReadDHT(float* temp,float* hum)
   DHT.temperature().getEvent(&event);
   if (isnan(event.temperature))
   {
-    Serial.println(F("Error reading temperature!"));
+    Serial.printf("Error reading temperature!\n");
     ret= false;
   }
   else
   {
-    Serial.print(F("Temperature: "));
-    Serial.print(event.temperature);
-    Serial.println(F("°C"));
     *temp = event.temperature;
   }
   // Get humidity event and print its value.
   DHT.humidity().getEvent(&event);
   if (isnan(event.relative_humidity))
   {
-    Serial.println(F("Error reading humidity!"));
+    Serial.printf("Error reading humidity!\n");
     ret = false;
   }
   else
   {
-    Serial.print(F("Humidity: "));
-    Serial.print(event.relative_humidity);
-    Serial.println(F("%"));
     *hum = event.relative_humidity;
   }
+  Serial.printf("Temp = %f °C, Humidity = %f%\n",*temp,*hum);
+  return ret;
 }
 //------------------------------------------------------------------
 bool CAmbientMonitor::ConnectWIFI(const char* ssid, const char* pass )
