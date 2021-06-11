@@ -74,6 +74,9 @@ void ADXL345::readAccel(int *x, int *y, int *z) {
 	readFrom(ADXL345_DATAX0, ADXL345_TO_READ, _buff);	// Read Accel Data from ADXL345
 
 	// Each Axis @ All g Ranges: 10 Bit Resolution (2 Bytes)
+	Serial.printf("X0 = %d , X1 = %d\n",_buff[0],_buff[1]);
+	Serial.printf("Y0 = %d , Y1 = %d\n",_buff[2],_buff[3]);
+	Serial.printf("Z0 = %d , Z1 = %d\n",_buff[4],_buff[5]);
 	*x = (int16_t)((((int)_buff[1]) << 8) | _buff[0]);
 	*y = (int16_t)((((int)_buff[3]) << 8) | _buff[2]);
 	*z = (int16_t)((((int)_buff[5]) << 8) | _buff[4]);
@@ -632,6 +635,7 @@ void ADXL345::setRate(double rate){
 	if (r <= 9) {
 		readFrom(ADXL345_BW_RATE, 1, &_b);
 		_s = (byte) (r + 6) | (_b & B11110000);
+		Serial.printf("Rate is set = %d\n",_s);
 		writeTo(ADXL345_BW_RATE, _s);
 	}
 }

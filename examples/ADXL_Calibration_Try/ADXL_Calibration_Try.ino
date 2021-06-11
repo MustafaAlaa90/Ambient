@@ -27,16 +27,15 @@ ADXL345 adxl = ADXL345();             // USE FOR I2C COMMUNICATION
 const float rawToG = 0.0039;
 /****************** VARIABLES ******************/
 /*                                             */
-const float rawToG = 0.0039;
 float xUp1g, xDown1g, yUp1g, yDown1g, zUp1g, zDown1g;
 float xOffset, xGain, yOffset, yGain, zOffset, zGain;
 
 // Values for one of the sensors/PCBs
-const int xUp =  205;
-const int xDown = -428;
-const int yUp =  245;
-const int yDown = -370;
-const int zUp =  511;
+const int xUp =  25;
+const int xDown = -54;
+const int yUp =  29;
+const int yDown = -47;
+const int zUp =  147;
 const int zDown = 0;
 
 /************** DEFINED VARIABLES **************/
@@ -53,13 +52,13 @@ const int zDown = 0;
 /*          Configure ADXL345 Settings         */
 void setup()
 {
-  Serial.begin(9600);                 // Start the serial terminal
+  Serial.begin(115200);                 // Start the serial terminal
   Serial.println("SparkFun ADXL345 Accelerometer Breakout Calibration");
   Serial.println();
   
   adxl.powerOn();                     // Power on the ADXL345
 
-  adxl.setRangeSetting(2);           // Give the range settings
+  adxl.setRangeSetting(16);           // Give the range settings
                                       // Accepted values are 2g, 4g, 8g or 16g
                                       // Higher Values = Wider Measurement Range
                                       // Lower Values = Greater Sensitivity
@@ -67,7 +66,6 @@ void setup()
   //adxl.setSpiBit(0);                // Configure the device: 4 wire SPI mode = '0' or 3 wire SPI mode = 1
                                       // Default: Set to 1
                                       // SPI pins on the ATMega328: 11, 12 and 13 as reference in SPI Library 
-  Serial.print((int)sizeof(int));
   
 
 xUp1g = xUp * rawToG;
@@ -97,13 +95,18 @@ void loop()
   int x,y,z;                          // init variables hold results
   ReadAverage(&x,&y,&z);         // Read the accelerometer values and store in variables x,y,z
 
+double xyz[3];
+  adxl.get_Gxyz(xyz);
+  Serial.print("g: X = "); Serial.print(xyz[0]); Serial.print("  Y= ");Serial.print(xyz[1]); Serial.print("  Z= "); Serial.print(xyz[2]); Serial.println();
   float xCal = (((float)x * 0.0039 - xOffset) / xGain) * 256;
   float yCal = (((float)y * 0.0039 - yOffset) / yGain) * 256;
   float zCal = (((float)z * 0.0039 - zOffset) / zGain) * 256;
 
-  double xyz[3];
-  adxl.get_Gxyz(xyz);
-  Serial.print("g: X = "); Serial.print(xyz[0]); Serial.print("  Y= ");Serial.print(xyz[1]); Serial.print("  Z= "); Serial.print(xyz[2]); Serial.println();
+  
+  float xCalg = (((float)xyz[0] + 0.055) / 0.145);
+  float yCalg = (((float)xyz[1] + 0.035) / 0.145);
+  float zCalg = (((float)xyz[2] - 0.39) / 0.12);
+
   /* Note: Must perform offset and gain calculations prior to seeing updated results
   Refer to SparkFun ADXL345 Hook Up Guide: https://learn.sparkfun.com/tutorials/adxl345-hookup-guide */
   // Convert raw values to 'milli-Gs"
@@ -111,7 +114,7 @@ void loop()
 
   Serial.print("New Calibrated Values: "); Serial.print(xCal); Serial.print("  "); Serial.print(yCal); Serial.print("  "); Serial.print(zCal);
   Serial.println(); 
-  
+  Serial.printf("new calibrated values g : x = %f, y = %f, z = %f\n",xCalg,yCalg,zCalg);
   while (Serial.available())
   {
     Serial.read();                    // Clear buffer

@@ -44,6 +44,8 @@ bool CAmbientMonitor::InitAirQualityChannel()
   memset(m_AirQualitySensorChReading,0,AIR_QUALITY_READING_SIZE);
   return Ret;
 }
+//------------------------------------------------------------
+
 //-------------------------------------------------------------
 void CAmbientMonitor::COInit()
 {
@@ -51,10 +53,10 @@ void CAmbientMonitor::COInit()
     ads.begin(); // begin externa adc
     Serial.printf("set CO regression mode to %d\n",_PPM);
     CO.setRegressionMethod(_PPM); //_PPM =  a*ratio^b
-    Serial.printf("Set CO point a = %d , CO point b = %d\n",COVAL_A,COVAL_B);
+    Serial.printf("Set CO point a = %f , CO point b = %f\n",COVAL_A,COVAL_B);
     CO.setA(COVAL_A); CO.setB(COVAL_B); // Configurate the ecuation values to get co concentration
     //CO.init();
-    Serial.printf("set CO RL value %d\n",CO_RL);
+    Serial.printf("set CO RL value %f\n",CO_RL);
     CO.setRL(CO_RL);
     float calcR0 = 0;
     for(int i = 1; i<=10; i ++)
@@ -65,8 +67,8 @@ void CAmbientMonitor::COInit()
       CO.setADC(volts0);
       calcR0 += CO.calibrate(RatioCleanAIRCO);
     }
-    CO.setR0(calcR0/10);
-    Serial.printf("Final CO_R0 = %f\n",calcR0);
+    CO.setR0(calcR0/10.0);
+    Serial.printf("RL = 100 , Final CO_R0 = %f\n",calcR0/10.0);
 }
 //-------------------------------------------------------------
 void CAmbientMonitor::CH4Init()
@@ -75,9 +77,10 @@ void CAmbientMonitor::CH4Init()
     ads.begin(); // begin externa adc
     Serial.printf("set CH4 regression mode to %d\n",_PPM);
     CH4.setRegressionMethod(_PPM); //_PPM =  a*ratio^b
-    Serial.printf("Set CH4 point a = %d , CH4 point b = %d\n",CH4VAL_A,CH4VAL_B);
+    Serial.printf("Set CH4 point a = %f , CH4 point b = %f\n",CH4VAL_A,CH4VAL_B);
     CH4.setA(CH4VAL_A); CH4.setB(CH4VAL_B); // Configurate the ecuation values to get Benzene concentration
-    CH4.init();
+    // //CH4.init();
+    Serial.printf("set CH4 RL value %f\n",CH4_RL);
     CH4.setRL(CH4_RL);
     float calcR0 = 0;
     for(int i = 1; i<=10; i ++)
@@ -88,8 +91,8 @@ void CAmbientMonitor::CH4Init()
       CH4.setADC(volts2);
       calcR0 += CH4.calibrate(RatioCleanAIRCH4);
     }
-    CH4.setR0(calcR0/10);
-    Serial.printf("Final CH4_R0 = %f\n",calcR0);
+    CH4.setR0(calcR0/10.0);
+    Serial.printf("RL = 100, Final CH4_R0 = %f\n",calcR0/10.0);
 }
 //-------------------------------------------------------------
 void CAmbientMonitor::CO2Init()
@@ -287,7 +290,7 @@ float CAmbientMonitor::ReadCH4PPM()
     int16_t adc2 = ads.readADC_SingleEnded(2);
     float volts2 = ads.computeVolts(adc2);
     Serial.printf("CH4 volts = %f\n",volts2);
-    CO.setADC(volts2);
+    CH4.setADC(volts2);
     float ch4 = CH4.readSensor();
     Serial.printf("CH4 PPM = %f\n",ch4);
     return ch4;
@@ -306,6 +309,7 @@ float CAmbientMonitor::ReadO3()
     Serial.printf("Reading OZONE ...\n");
     int16_t o3 = O3.ReadOzoneData(COLLECT_NUMBER);
     Serial.printf("O3 PPB = %d\n",o3);
+    Serial.printf("O3 PPM = %f\n",o3/1000.0);
     return o3/1000.0;
 }
 //-----------------------------------------------------------
@@ -450,4 +454,56 @@ bool CAmbientMonitor::ConnectWIFI(const char* ssid, const char* pass )
 bool CAmbientMonitor::IsWiFiConnected()
 {
   return WiFi.status() == WL_CONNECTED;
+}
+//---------------------------------------------------------------
+bool CAmbientMonitor::InitSDcard()
+{
+  char trials = 0;
+  while(!SD.begin() && trials < 3)
+  {
+    trials++;
+  }
+  if(trials < 3)
+  {
+    Serial.printf("Memory Card Found\n");
+    uint64_t totalcardBytes = SD.totalBytes() / (1024 * 1024);
+    uint64_t usedcardBytes = SD.usedBytes() / (1024 * 1024);
+    Serial.printf("SD Card Total Bytes: %lluMB\n", totalcardBytes);
+    Serial.printf("SD Card Used Bytes: %lluMB\n", usedcardBytes);
+  }
+}
+//----------------------------------------------------------------
+void appendFile(fs::FS &fs, const char * path, const char * message)
+{
+    Serial.printf("Appending to file: %s\n", path);
+
+    File file = fs.open(path, FILE_APPEND);
+    if(!file){
+        Serial.println("Failed to open file for appending");
+        return;
+    }
+    if(file.print(message)){
+        Serial.println("Message appended");
+    } else {
+        Serial.println("Append failed");
+    }
+    file.close();
+}
+//-------------------------------------------------------------------
+bool readFile(fs::FS &fs, const char * path, char* message){
+    Serial.printf("Reading file: %s\n", path);
+
+    File file = fs.open(path);
+    if(!file)
+    {
+        Serial.println("Failed to open file for reading");
+        return false;
+    }
+
+    Serial.print("Read from file: ");
+    while(file.available()){
+        Serial.write(file.read());
+    }
+    file.close();
+    return true;
 }

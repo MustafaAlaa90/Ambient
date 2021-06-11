@@ -23,9 +23,15 @@
 
 /*********** COMMUNICATION SELECTION ***********/
 /*    Comment Out The One You Are Not Using    */
-ADXL345 adxl = ADXL345(10);           // USE FOR SPI COMMUNICATION, ADXL345(CS_PIN);
-//ADXL345 adxl = ADXL345();             // USE FOR I2C COMMUNICATION
+//ADXL345 adxl = ADXL345(10);           // USE FOR SPI COMMUNICATION, ADXL345(CS_PIN);
+ADXL345 adxl = ADXL345();             // USE FOR I2C COMMUNICATION
+#define offsetX   30       // OFFSET values
+#define offsetY   14
+#define offsetZ   -40
 
+// #define gainX     133        // GAIN factors
+// #define gainY     261
+// #define gainZ     248 
 /****************** INTERRUPT ******************/
 /*      Uncomment If Attaching Interrupt       */
 //int interruptPin = 2;                 // Setup pin 2 to be the interrupt pin (for most Arduino Boards)
@@ -35,23 +41,25 @@ ADXL345 adxl = ADXL345(10);           // USE FOR SPI COMMUNICATION, ADXL345(CS_P
 /*          Configure ADXL345 Settings         */
 void setup(){
   
-  Serial.begin(9600);                 // Start the serial terminal
+  Serial.begin(115200);                 // Start the serial terminal
   Serial.println("SparkFun ADXL345 Accelerometer Hook Up Guide Example");
   Serial.println();
   
   adxl.powerOn();                     // Power on the ADXL345
 
-  adxl.setRangeSetting(16);           // Give the range settings
+  adxl.setRangeSetting(8);           // Give the range settings
                                       // Accepted values are 2g, 4g, 8g or 16g
                                       // Higher Values = Wider Measurement Range
                                       // Lower Values = Greater Sensitivity
-
-  adxl.setSpiBit(0);                  // Configure the device to be in 4 wire SPI mode when set to '0' or 3 wire SPI mode when set to 1
+  adxl.setAxisOffset(offsetX,offsetY,offsetZ);
+  // double gains [3]={gainX,gainY,gainZ};
+  // adxl.setAxisGains(gains);
+  //adxl.setSpiBit(0);                  // Configure the device to be in 4 wire SPI mode when set to '0' or 3 wire SPI mode when set to 1
                                       // Default: Set to 1
                                       // SPI pins on the ATMega328: 11, 12 and 13 as reference in SPI Library 
    
-  adxl.setActivityXYZ(1, 0, 0);       // Set to activate movement detection in the axes "adxl.setActivityXYZ(X, Y, Z);" (1 == ON, 0 == OFF)
-  adxl.setActivityThreshold(75);      // 62.5mg per increment   // Set activity   // Inactivity thresholds (0-255)
+  //adxl.setActivityXYZ(1, 0, 0);       // Set to activate movement detection in the axes "adxl.setActivityXYZ(X, Y, Z);" (1 == ON, 0 == OFF)
+  //adxl.setActivityThreshold(75);      // 62.5mg per increment   // Set activity   // Inactivity thresholds (0-255)
  
   adxl.setInactivityXYZ(1, 0, 0);     // Set to detect inactivity in all the axes "adxl.setInactivityXYZ(X, Y, Z);" (1 == ON, 0 == OFF)
   adxl.setInactivityThreshold(75);    // 62.5mg per increment   // Set inactivity // Inactivity thresholds (0-255)
@@ -66,8 +74,8 @@ void setup(){
   adxl.setDoubleTapWindow(200);       // 1.25 ms per increment
  
   // Set values for what is considered FREE FALL (0-255)
-  adxl.setFreeFallThreshold(7);       // (5 - 9) recommended - 62.5mg per increment
-  adxl.setFreeFallDuration(30);       // (20 - 70) recommended - 5ms per increment
+  adxl.setFreeFallThreshold(9);       // (5 - 9) recommended - 62.5mg per increment
+  adxl.setFreeFallDuration(20);       // (20 - 70) recommended - 5ms per increment
  
   // Setting all interupts to take place on INT1 pin
   //adxl.setImportantInterruptMapping(1, 1, 1, 1, 1);     // Sets "adxl.setEveryInterruptMapping(single tap, double tap, free fall, activity, inactivity);" 
@@ -80,8 +88,8 @@ void setup(){
   adxl.FreeFallINT(1);
   adxl.doubleTapINT(1);
   adxl.singleTapINT(1);
-  
-//attachInterrupt(digitalPinToInterrupt(interruptPin), ADXL_ISR, RISING);   // Attach Interrupt
+  //pinMode(13, INPUT);
+  //attachInterrupt(digitalPinToInterrupt(13), ADXL_ISR, RISING);   // Attach Interrupt
 
 }
 
@@ -90,22 +98,16 @@ void setup(){
 void loop(){
   
   // Accelerometer Readings
-  int x,y,z;   
-  adxl.readAccel(&x, &y, &z);         // Read the accelerometer values and store them in variables declared above x,y,z
-
-  // Output Results to Serial
-  /* UNCOMMENT TO VIEW X Y Z ACCELEROMETER VALUES */  
-  //Serial.print(x);
-  //Serial.print(", ");
-  //Serial.print(y);
-  //Serial.print(", ");
-  //Serial.println(z); 
+  double xyz[3];
+  adxl.get_Gxyz(xyz);
+  Serial.print("g: X = "); Serial.print(xyz[0]); Serial.print("  Y= ");Serial.print(xyz[1]); Serial.print("  Z= "); Serial.print(xyz[2]); Serial.println();
   
   ADXL_ISR();
   // You may also choose to avoid using interrupts and simply run the functions within ADXL_ISR(); 
   //  and place it within the loop instead.  
   // This may come in handy when it doesn't matter when the action occurs. 
-
+  Serial.printf("before delay\n");
+  delay(2000);
 }
 
 /********************* ISR *********************/

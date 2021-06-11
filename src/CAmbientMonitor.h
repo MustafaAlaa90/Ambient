@@ -16,15 +16,26 @@
 #include "CUblox.h"
 #include "sps30.h"
 #include "Adafruit_ADS1X15.h"
+#include "FS.h"
+#include "SD.h"
+#include "SPI.h"
+
 
 
  /* Common Defines */
 #define BOARD               ("ESP32")
 #define Voltage_Resolution  (3.3)
 #define ADC_Bit_Resolution  (16)      // external adc
-#define _PPM                (1)
+#define _PPM                (0)
 
+/* Butons Defines */
+#define Connect_WIFI_Pin       25
+#define Start_Stop_Reading_Pin 35
+#define Reset_Pin              26
 
+/* LEDs Defines*/
+#define WWIFI_LED              33
+#define Start_Stop_LED         32
 
 /* CO Defines */
 #define COTYPE              ("MQ-3")
@@ -32,7 +43,8 @@
 #define RatioCleanAIRCO     (60)
 #define COVAL_A             (521853)
 #define COVAL_B             (-3.821) 
-#define CO_RL               (10)
+#define CO_RL               (100.0)
+#define CO_R0               /*(87377.331250)*/ 54610.0  // from calibration process
 
 /* CH4 Defines */
 #define CH4TYPE             ("MQ-5")
@@ -40,13 +52,14 @@
 #define RatioCleanAIRCH4    (6.5)
 #define CH4VAL_A            (177.65)
 #define CH4VAL_B            (-2.56)
-#define CH4_RL              (47)
+#define CH4_RL              (100.0)
+#define CH4_R0              (504100.0) // from calibration process
 
 /* CO2 Defines */
 #define CO2_LOW             600
 #define CO2_HIGHT           1000
-#define CO2VREF                3300.0
-#define CO2Samples          4096
+#define CO2VREF             3300.0
+#define CO2Samples          32768
 #define CO2PIN              39
 #define INERTIA             0.99
 #define TRIES               100           
@@ -132,6 +145,8 @@ class CAmbientMonitor
         bool                InitGasSensorChannel();
         bool                InitAirQualityChannel();
         bool                InitMovementChannel();
+        void                InitButtons();
+        void                InitLEDs();
 
         void                ReadGasSensorChannel();
         bool                ReadAirQualityChannel();

@@ -25,9 +25,9 @@ void MQUnifiedsensor::setR0(float R0) {
 void MQUnifiedsensor::setRL(float RL) {
   this->_RL = RL;
 }
-void MQUnifiedsensor::setADC(int value)
+void MQUnifiedsensor::setADC(float value)
 {
-  this-> _sensor_volt = (value) * _VOLT_RESOLUTION / ((pow(2, _ADC_Bit_Resolution)) - 1); 
+  this-> _sensor_volt = (value) /** _VOLT_RESOLUTION / ((pow(2, _ADC_Bit_Resolution)) - 1)*/; 
   this-> _adc =  value;
 }
 void MQUnifiedsensor::setVoltResolution(float voltage_resolution)
@@ -127,10 +127,13 @@ float MQUnifiedsensor::validateEcuation(float ratioInput)
 }
 float MQUnifiedsensor::readSensor()
 {
+  //Serial.printf("sensor volt =%f \n",_sensor_volt);
   //More explained in: https://jayconsystems.com/blog/understanding-a-gas-sensor
-  _RS_Calc = ((_VOLT_RESOLUTION*_RL)/_sensor_volt)-_RL; //Get value of RS in a gas
+  _RS_Calc = /*18.3965;*/((_VOLT_RESOLUTION*_RL)/_sensor_volt)-_RL; //Get value of RS in a gas
+  //Serial.printf("_RS_Calc = %f\n",_RS_Calc);
   if(_RS_Calc < 0)  _RS_Calc = 0; //No negative values accepted.
   _ratio = _RS_Calc / this->_R0;   // Get ratio RS_gas/RS_air
+  //Serial.printf("_ratio = %f\n",_ratio);
   if(_ratio <= 0)  _ratio = 0; //No negative values accepted or upper datasheet recomendation.
   if(_regressionMethod == 1) _PPM= _a*pow(_ratio, _b); // <- Source excel analisis https://github.com/miguel5612/MQSensorsLib_Docs/tree/master/Internal_design_documents
   else 
@@ -139,6 +142,7 @@ float MQUnifiedsensor::readSensor()
     double ppm_log = (log10(_ratio)-_b)/_a; //Get ppm value in linear scale according to the the ratio value  
     _PPM = pow(10, ppm_log); //Convert ppm value to log scale  
   }
+  //Serial.printf("PPM from Readsensor = %f\n",_PPM);
   if(_PPM < 0)  _PPM = 0; //No negative values accepted or upper datasheet recomendation.
   //if(_PPM > 10000) _PPM = 99999999; //No negative values accepted or upper datasheet recomendation.
   return _PPM;

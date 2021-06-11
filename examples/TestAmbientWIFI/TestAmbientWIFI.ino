@@ -32,13 +32,13 @@ void setup()
    {
     Serial.println("Couldn't initialize O3 Sensor\n");
    }
-   Serial.println("Init Air Quality channel .... \n");
-   if(!ambient.InitAirQualityChannel())
-   {
-    Serial.println("Couldn't initialize Air Quality channel\n");
-   }
-  Serial.printf("Waiting for Gas Sensor to heat up ....\n");
-  delay(2000);
+  //  Serial.println("Init Air Quality channel .... \n");
+  //  if(!ambient.InitAirQualityChannel())
+  //  {
+  //   Serial.println("Couldn't initialize Air Quality channel\n");
+  //  }
+  // Serial.printf("Waiting for Gas Sensor to heat up ....\n");
+  // delay(2000);
 }
 
 void loop()
@@ -61,12 +61,12 @@ void loop()
   ambient.WriteGASSensorsChannel();
   Serial.printf("Waiting 15 sec interval\n");
   delay(15000);
-  Serial.printf("Reading Air Quality values ... \n");
-  ambient.ReadAirQualityChannel();
-  Serial.printf("Write Air Quality values to ThingSpeak\n");
-  ambient.WriteAirQualityChannel();
-  delay(15000);
-
+  // Serial.printf("Reading Air Quality values ... \n");
+  // ambient.ReadAirQualityChannel();
+  // Serial.printf("Write Air Quality values to ThingSpeak\n");
+  // ambient.WriteAirQualityChannel();
+  // delay(15000);
+  //delay(1000);
 }
 //---------------------------------------------------------------------------
 void WiFiEvent(WiFiEvent_t event, system_event_info_t info){
