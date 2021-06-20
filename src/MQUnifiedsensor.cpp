@@ -6,8 +6,9 @@ MQUnifiedsensor::MQUnifiedsensor(String Placa, float Voltage_Resolution, int ADC
   type.toCharArray(this->_type, 6);
   //this->_type = type; //MQ-2, MQ-3 ... MQ-309A
   //this->_placa = Placa;
-  this-> _VOLT_RESOLUTION = Voltage_Resolution;
-  this-> _ADC_Bit_Resolution = ADC_Bit_Resolution;
+  Serial.printf("Voltage_Resolution = %f\n",Voltage_Resolution);
+  this->_VOLT_RESOLUTION = Voltage_Resolution;
+  this->_ADC_Bit_Resolution = ADC_Bit_Resolution;
 }
 void MQUnifiedsensor::init()
 {
@@ -27,12 +28,14 @@ void MQUnifiedsensor::setRL(float RL) {
 }
 void MQUnifiedsensor::setADC(float value)
 {
-  this-> _sensor_volt = (value) /** _VOLT_RESOLUTION / ((pow(2, _ADC_Bit_Resolution)) - 1)*/; 
-  this-> _adc =  value;
+
+  this->_sensor_volt = (value) /** _VOLT_RESOLUTION / ((pow(2, _ADC_Bit_Resolution)) - 1)*/; 
+  Serial.printf("this-> _sensor_volt = %f, value = %f\n",this->_sensor_volt,value);
+  this->_adc =  value;
 }
 void MQUnifiedsensor::setVoltResolution(float voltage_resolution)
 {
-  _VOLT_RESOLUTION = voltage_resolution;
+ this->_VOLT_RESOLUTION = voltage_resolution;
 }
 void MQUnifiedsensor::setRegressionMethod(int regressionMethod)
 {
@@ -129,13 +132,13 @@ float MQUnifiedsensor::readSensor()
 {
   //Serial.printf("sensor volt =%f \n",_sensor_volt);
   //More explained in: https://jayconsystems.com/blog/understanding-a-gas-sensor
-  _RS_Calc = /*18.3965;*/((_VOLT_RESOLUTION*_RL)/_sensor_volt)-_RL; //Get value of RS in a gas
-  //Serial.printf("_RS_Calc = %f\n",_RS_Calc);
+  _RS_Calc = /*18.3965;*/((this->_VOLT_RESOLUTION*this->_RL)/this->_sensor_volt)-this->_RL; //Get value of RS in a gas
+  Serial.printf("_RS_Calc = %f\n",_RS_Calc);
   if(_RS_Calc < 0)  _RS_Calc = 0; //No negative values accepted.
   _ratio = _RS_Calc / this->_R0;   // Get ratio RS_gas/RS_air
-  //Serial.printf("_ratio = %f\n",_ratio);
+  Serial.printf("_ratio = %f\n",_ratio);
   if(_ratio <= 0)  _ratio = 0; //No negative values accepted or upper datasheet recomendation.
-  if(_regressionMethod == 1) _PPM= _a*pow(_ratio, _b); // <- Source excel analisis https://github.com/miguel5612/MQSensorsLib_Docs/tree/master/Internal_design_documents
+  if(_regressionMethod == 1) _PPM= this->_a*pow(_ratio, this->_b); // <- Source excel analisis https://github.com/miguel5612/MQSensorsLib_Docs/tree/master/Internal_design_documents
   else 
   {
     // https://jayconsystems.com/blog/understanding-a-gas-sensor <- Source of linear ecuation
@@ -180,10 +183,15 @@ float MQUnifiedsensor::calibrate(float ratioInCleanAir) {
   */
   float RS_air; //Define variable for sensor resistance
   float R0; //Define variable for R0
-  RS_air = ((_VOLT_RESOLUTION*_RL)/_sensor_volt)-_RL; //Calculate RS in fresh air
+  RS_air = ((this->_VOLT_RESOLUTION*this->_RL)/this->_sensor_volt)-this->_RL; //Calculate RS in fresh air
+  Serial.printf("_VOLT_RESOLUTION = %f\n",this->_VOLT_RESOLUTION);
+  Serial.printf("_sensor_volt     = %f\n",this->_sensor_volt);
+  Serial.printf("_RL              = %f\n",this->_RL);
+  Serial.printf("RS_air           = %f\n",RS_air);
   if(RS_air < 0)  RS_air = 0; //No negative values accepted.
   R0 = RS_air/ratioInCleanAir; //Calculate R0 
   if(R0 < 0)  R0 = 0; //No negative values accepted.
+  Serial.printf("R0 from calibration = %f\n",R0);
   return R0;
 }
 float MQUnifiedsensor::getVoltage(int read) {

@@ -8,6 +8,25 @@ CAmbientMonitor::CAmbientMonitor():
 ,DHT(DHTPIN, DHTTYPE)
 {
 }
+//------------------------------------------------------------
+void CAmbientMonitor::InitButtons()
+{
+  pinMode(Connect_WIFI_Pin, INPUT_PULLUP);
+  pinMode(Start_Stop_Reading_Pin, INPUT_PULLUP);
+  pinMode(Reset_Pin, INPUT_PULLUP);
+}
+//------------------------------------------------------------
+void CAmbientMonitor::InitLEDs()
+{
+  pinMode(WWIFI_LED,OUTPUT);
+  pinMode(Start_Stop_LED,OUTPUT);
+}
+//---------------------------------------------------------
+void CAmbientMonitor::InitMovementChannel()
+{
+  GPSInit();
+  memset(m_MovementSensorChReading,0,MOVEMENT_READING_SIZE);
+}
 //-----------------------------------------------------------
 bool CAmbientMonitor::InitGasSensorChannel()
 {
@@ -50,49 +69,53 @@ bool CAmbientMonitor::InitAirQualityChannel()
 void CAmbientMonitor::COInit()
 {
     Serial.printf("Begin ADC Driver\n");
-    ads.begin(); // begin externa adc
+    this->ads.begin(); // begin externa adc
     Serial.printf("set CO regression mode to %d\n",_PPM);
-    CO.setRegressionMethod(_PPM); //_PPM =  a*ratio^b
+    this->CO.setRegressionMethod(_PPM); //_PPM =  a*ratio^b
     Serial.printf("Set CO point a = %f , CO point b = %f\n",COVAL_A,COVAL_B);
-    CO.setA(COVAL_A); CO.setB(COVAL_B); // Configurate the ecuation values to get co concentration
+    this->CO.setA(COVAL_A); this->CO.setB(COVAL_B); // Configurate the ecuation values to get co concentration
+    this->CO.setVoltResolution(Voltage_Resolution);
+    Serial.printf("set voltResolution = %f\n",this->CO.getVoltResolution());
     //CO.init();
-    Serial.printf("set CO RL value %f\n",CO_RL);
-    CO.setRL(CO_RL);
+    this->CO.setRL(CO_RL);
+    Serial.printf("set CO RL value %f\n",this->CO.getRL());
     float calcR0 = 0;
     for(int i = 1; i<=10; i ++)
     {
       //CO.update();
-      int16_t adc0 = ads.readADC_SingleEnded(CO_ADC_PIN);
-      float volts0 = ads.computeVolts(adc0);
-      CO.setADC(volts0);
-      calcR0 += CO.calibrate(RatioCleanAIRCO);
+      int16_t adc0 = this->ads.readADC_SingleEnded(CO_ADC_PIN);
+      float volts0 = this->ads.computeVolts(adc0);
+      this->CO.setADC(volts0);
+      calcR0 += this->CO.calibrate(RatioCleanAIRCO);
     }
-    CO.setR0(calcR0/10.0);
-    Serial.printf("RL = 100 , Final CO_R0 = %f\n",calcR0/10.0);
+    this->CO.setR0(calcR0/float(10.0));
+    Serial.printf("RL = 100 , Final CO_R0 = %f\n",this->CO.getR0());
 }
 //-------------------------------------------------------------
 void CAmbientMonitor::CH4Init()
 {
     Serial.printf("Begin ADC Driver\n");
-    ads.begin(); // begin externa adc
+    this->ads.begin(); // begin externa adc
     Serial.printf("set CH4 regression mode to %d\n",_PPM);
-    CH4.setRegressionMethod(_PPM); //_PPM =  a*ratio^b
+    this->CH4.setRegressionMethod(_PPM); //_PPM =  a*ratio^b
     Serial.printf("Set CH4 point a = %f , CH4 point b = %f\n",CH4VAL_A,CH4VAL_B);
-    CH4.setA(CH4VAL_A); CH4.setB(CH4VAL_B); // Configurate the ecuation values to get Benzene concentration
+    this->CH4.setA(CH4VAL_A); this->CH4.setB(CH4VAL_B); // Configurate the ecuation values to get Benzene concentration
+    this->CH4.setVoltResolution(Voltage_Resolution);
+    Serial.printf("set voltResolution = %f\n",this->CH4.getVoltResolution());
     // //CH4.init();
-    Serial.printf("set CH4 RL value %f\n",CH4_RL);
-    CH4.setRL(CH4_RL);
+    this->CH4.setRL(CH4_RL);
+    Serial.printf("set CH4 RL value %f\n",CH4.getRL());
     float calcR0 = 0;
     for(int i = 1; i<=10; i ++)
     {
       //CH4.update();
-      int16_t adc2 = ads.readADC_SingleEnded(CH4_ADC_PIN);
-      float volts2 = ads.computeVolts(adc2);
-      CH4.setADC(volts2);
-      calcR0 += CH4.calibrate(RatioCleanAIRCH4);
+      int16_t adc2 = this->ads.readADC_SingleEnded(CH4_ADC_PIN);
+      float volts2 = this->ads.computeVolts(adc2);
+      this->CH4.setADC(volts2);
+      calcR0 += this->CH4.calibrate(RatioCleanAIRCH4);
     }
-    CH4.setR0(calcR0/10.0);
-    Serial.printf("RL = 100, Final CH4_R0 = %f\n",calcR0/10.0);
+    this->CH4.setR0(calcR0/float(10.0));
+    Serial.printf("RL = 100, Final CH4_R0 = %f\n",this->CH4.getR0());
 }
 //-------------------------------------------------------------
 void CAmbientMonitor::CO2Init()
@@ -133,7 +156,7 @@ bool CAmbientMonitor::O3Init()
 //------------------------------------------------------------
 void CAmbientMonitor::GPSInit()
 {
-    GPS.UbloxInit(UBlox_baud,RX,TX);
+    GPS.UbloxInit(UBlox_baud,RX,TX,UBlox_UART);
 }
 //-------------------------------------------------------------
 void CAmbientMonitor::ThinkSpeakInit()
@@ -194,17 +217,26 @@ void CAmbientMonitor::SetfieldMultiple(float* channelArr,uint8_t ArrSize)
         ThingSpeak.setField(i,channelArr[i-1]);
     }
 }
+//-------------------------------------------------------------
+void CAmbientMonitor::SetfieldMultiple(double* channelArr,uint8_t ArrSize)
+{
+    for (uint8_t i=1;i<=ArrSize;i++)
+    {
+        ThingSpeak.setField(i,(float)channelArr[i-1]);
+    }
+}
 //------------------------------------------------------------
 bool CAmbientMonitor::WriteGASSensorsChannel()
 {
     bool Ret = true;
-    if(ThingSpeak.writeFields(SECRET_GAS_SENSOR_ID,SECRET_GAS_SENSOR_WRITE_APIKEY) == 200 )
+    int status= ThingSpeak.writeFields(SECRET_GAS_SENSOR_ID,SECRET_GAS_SENSOR_WRITE_APIKEY);
+    if( status == 200 )
     {
       Serial.printf("Gas Sensors value wrote successfully to ThingSpeak\n");
     }
     else
     {
-      Serial.printf("Failed to Write Gas Sensors value to ThingSpeak\n");
+      Serial.printf("Failed to Write Gas Sensors value to ThingSpeak, status = %d\n",status);
       Ret = false;
     }
     return Ret;
@@ -224,15 +256,31 @@ bool CAmbientMonitor::WriteAirQualityChannel()
   }
   return Ret;
 }
+//--------------------------------------------------------------
+bool CAmbientMonitor::WriteMovementChannel()
+{
+  bool Ret = true;
+  if(ThingSpeak.writeFields(SECRET_MOVEMENT_ID,SECRET_MOVEMENT_WRITE_APIKEY) == 200 )
+  {
+    Serial.printf("Movement value wrote successfully to ThingSpeak\n");
+  }
+  else
+  {
+    Serial.printf("Failed to Write Movement value to ThingSpeak\n");
+    Ret = false;
+  }
+  return Ret;
+}
 //-------------------------------------------------------------
 void CAmbientMonitor::ReadGasSensorChannel()
 {
   m_GasSensorChReading[Gas_Sensor_field_CO-1] =  ReadCOPPM();
   m_GasSensorChReading[Gas_Sensor_field_CO2-1] = (float) ReadCO2PPM();
-  m_GasSensorChReading[Gas_Sensor_field_CH4-1] = ReadCH4PPM();
+  m_GasSensorChReading[Gas_Sensor_field_CH4-1] = ReadCH4PPM() + float(200.0);
   m_GasSensorChReading[Gas_Sensor_field_O3-1] =  ReadO3();
   SetfieldMultiple(m_GasSensorChReading,GAS_SENSOR_READING_SIZE);
-  
+  ThingSpeak.setLatitude(29.957441748034174);
+  ThingSpeak.setLongitude(30.912880079820305);
 }
 //-----------------------------------------------------------
 bool CAmbientMonitor::ReadAirQualityChannel()
@@ -263,6 +311,29 @@ bool CAmbientMonitor::ReadAirQualityChannel()
   //   Serial.printf("Field = %f\n",m_AirQualitySensorChReading[i]);
   // }
   SetfieldMultiple(m_AirQualitySensorChReading,AIR_QUALITY_READING_SIZE);
+  ThingSpeak.setLatitude(29.957441748034174);
+  ThingSpeak.setLongitude(30.912880079820305);
+}
+//------------------------------------------------------------
+bool CAmbientMonitor::ReadMovementChannel()
+{
+  if(GPS.getfixCount()>0)
+  {
+    double lat,lng,alt;
+    GPS.getInfo(&lat,&lng,&alt);
+    m_MovementSensorChReading[Movement_field_Longitude-1]= lat;
+    m_MovementSensorChReading[Movement_field_Latitude-1]= lng;
+    m_MovementSensorChReading[Movement_field_Altitude-1]= alt;
+  }
+  else
+  {
+    Serial.printf("Waiting for GPS to Fix\n");
+  }
+  m_MovementSensorChReading[Movement_field_Sound_Level-1]= (double)ReadSoundLevel();
+  SetfieldMultiple(m_MovementSensorChReading,MOVEMENT_READING_SIZE);
+  ThingSpeak.setLatitude(29.957441748034174);
+  ThingSpeak.setLongitude(30.912880079820305);
+
 }
 //-------------------------------------------------------------
 float CAmbientMonitor::ReadCOPPM()
@@ -282,8 +353,6 @@ float CAmbientMonitor::ReadCOPPM()
 //------------------------------------------------------------
 float CAmbientMonitor::ReadCH4PPM()
 {
-    //CH4.update();
-    //return CH4.readSensor();
     Serial.printf("Begin ADC Driver ...\n");
     ads.begin(); // begin externa adc
     Serial.printf("Read CH4 from ADC Driver\n");
@@ -316,12 +385,16 @@ float CAmbientMonitor::ReadO3()
 float CAmbientMonitor::ReadSoundLevel()
 {
     float voltage =0;
-    float voltageValue =0;
+    uint16_t voltageValue =0;
     for(int i=0;i<100;i++)
     {
         voltageValue=voltageValue+analogRead(SOUND_LEVEL_PIN);
+        delay(2);
     }
-    voltage = (voltageValue / ADC_Bit_Resolution * Voltage_Resolution)/100;
+    Serial.printf("Sound level =%d \n",voltageValue);
+    Serial.printf("Sound level =%f \n",voltageValue/100.0);
+    voltage = (voltageValue / ADC_Bit_Resolution_ESP * Voltage_Resolution)/100.0;
+    Serial.printf("Sound levl = %f dbA\n",voltage * 50.0);
     return voltage * 50.0;  //convert voltage to decibel value
 }
 //-------------------------------------------------------------
@@ -448,7 +521,21 @@ bool CAmbientMonitor::ReadDHT(float* temp,float* hum)
 //------------------------------------------------------------------
 bool CAmbientMonitor::ConnectWIFI(const char* ssid, const char* pass )
 {
-  return WiFi.begin(ssid,pass) == WL_CONNECTED;
+  int trials = 0;
+  bool state=false;
+  WiFi.disconnect(true);
+  while(WiFi.begin(ssid,pass) == WL_CONNECT_FAILED)
+  {
+    Serial.printf("Connecting to wifi\n");
+    digitalWrite(WWIFI_LED,state);
+    state = !state;
+    delay(500);
+  }
+  return WiFi.status()!=WL_CONNECT_FAILED;
+}
+bool CAmbientMonitor::DisconnectConnectWIFI()
+{
+  return WiFi.disconnect();
 }
 //------------------------------------------------------------------
 bool CAmbientMonitor::IsWiFiConnected()

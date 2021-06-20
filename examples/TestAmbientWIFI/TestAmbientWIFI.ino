@@ -1,7 +1,11 @@
 #include "CAmbientMonitor.h"
 
 CAmbientMonitor ambient;
-bool connected = false;
+static bool connect_state = true;
+static bool start_stop_state = true;
+static int key_pessed_wifi_counter = 0;
+static int key_pessed_start_stop_counter = 0;
+bool wifi_connected = false;
 /* WPS Varaibels */
 static esp_wps_config_t config;
 #define ESP_WPS_MODE      WPS_TYPE_PBC
@@ -10,10 +14,60 @@ static esp_wps_config_t config;
 #define ESP_MODEL_NAME    "ESPRESSIF IOT"
 #define ESP_DEVICE_NAME   "ESP STATION"
 
+ void isr_WIFI()
+ {
+    static unsigned long last_interrupt_time = 0;
+    unsigned long interrupt_time = millis();
+    // If interrupts come faster than 200ms, assume it's a bounce and ignore
+    if (interrupt_time - last_interrupt_time > 300) 
+    {
+      key_pessed_wifi_counter += 1;
+      connect_state = !connect_state;
+      Serial.printf("Button wifi has been pressed %u times, connect_state = %d\n", key_pessed_wifi_counter,connect_state);
+    }
+    last_interrupt_time = interrupt_time;
+  }
+  void isr_Start_Stop()
+  {
+    static unsigned long last_interrupt_time = 0;
+    unsigned long interrupt_time = millis();
+    // If interrupts come faster than 200ms, assume it's a bounce and ignore
+    if (interrupt_time - last_interrupt_time > 300) 
+    {
+      key_pessed_start_stop_counter += 1;
+      start_stop_state = !start_stop_state;
+      Serial.printf("Button start_stop has been pressed %u times, start_stop_state = %d\n", key_pessed_start_stop_counter,start_stop_state);
+      digitalWrite(Start_Stop_LED,start_stop_state);
+    }
+    last_interrupt_time = interrupt_time;
+  }
+  void isr_Reset()
+  {
+    static unsigned long last_interrupt_time = 0;
+    unsigned long interrupt_time = millis();
+    // If interrupts come faster than 200ms, assume it's a bounce and ignore
+    if (interrupt_time - last_interrupt_time > 300) 
+    {
+      key_pessed_start_stop_counter += 1;
+      //start_stop_state = !start_stop_state;
+      Serial.printf("Button reset has been pressed %u times, reseting now\n", key_pessed_start_stop_counter,start_stop_state);
+      ESP.restart();
+    }
+    last_interrupt_time = interrupt_time;
+  }
+
 void setup()
 {
     Serial.begin(115200);
     Serial.println("Starting AmbienMonitor");
+    //-----------------------------------------------------------------------
+    ambient.InitButtons();
+    ambient.InitLEDs();
+    digitalWrite(WWIFI_LED,connect_state);
+    digitalWrite(Start_Stop_LED,start_stop_state);
+    attachInterrupt(digitalPinToInterrupt(Connect_WIFI_Pin), isr_WIFI,  FALLING);
+    attachInterrupt(digitalPinToInterrupt(Start_Stop_Reading_Pin), isr_Start_Stop, FALLING);
+    attachInterrupt(digitalPinToInterrupt(Reset_Pin), isr_Reset, FALLING);
     //-----------------------------------------------------------------------
     // Serial.println("Init WPS ...");
     // WiFi.onEvent(WiFiEvent);
@@ -32,40 +86,76 @@ void setup()
    {
     Serial.println("Couldn't initialize O3 Sensor\n");
    }
-  //  Serial.println("Init Air Quality channel .... \n");
-  //  if(!ambient.InitAirQualityChannel())
-  //  {
-  //   Serial.println("Couldn't initialize Air Quality channel\n");
-  //  }
-  // Serial.printf("Waiting for Gas Sensor to heat up ....\n");
-  // delay(2000);
+   Serial.println("Init Air Quality channel .... \n");
+   if(!ambient.InitAirQualityChannel())
+   {
+    Serial.println("Couldn't initialize Air Quality channel\n");
+   }
+   Serial.println("Init Movement channel .... \n");
+   ambient.InitMovementChannel();
+  Serial.printf("Waiting for Gas Sensor to heat up ....\n");
+  delay(2000);
 }
 
 void loop()
 {
-  if(!ambient.IsWiFiConnected())
+  
+  if(!wifi_connected && connect_state)
   {
-    if(ambient.ConnectWIFI("Esraa","Esraa+28121995"))
+    Serial.printf("inside condition of connect_state = true\n");
+    wifi_connected = ambient.ConnectWIFI("Esraa","Esraa+28121995"); 
+    if(wifi_connected)
     {
-      connected = true;
+      Serial.printf("Successfully connected to wifi\n");
+      digitalWrite(WWIFI_LED,HIGH);
     }
     else
     {
       Serial.printf("Could not connect to wifi network ... reading will be saved to SD Card\n");
+      digitalWrite(WWIFI_LED,LOW);
+      wifi_connected = false;
     }
+    delay(1000);
+  }
+  else if(wifi_connected && !connect_state)
+  {
+    Serial.printf("inside condition of connect state = false\n");
+    if(ambient.DisconnectConnectWIFI())
+    {
+      Serial.printf("Successfully disconnected from wifi\n");
+      digitalWrite(WWIFI_LED,LOW);
+      wifi_connected = false;
+    }
+    else
+    {
+      Serial.printf("Couldn't disconnect from wifi\n");
+      digitalWrite(WWIFI_LED,HIGH);
+    }
+    delay(1000);
   }
   //-----------------------------------------
-  Serial.printf("Reading Gas Sensors values ... \n");
-  ambient.ReadGasSensorChannel();
-  Serial.printf("Write Gas Sensors values to ThingSpeak\n");
-  ambient.WriteGASSensorsChannel();
-  Serial.printf("Waiting 15 sec interval\n");
-  delay(15000);
-  // Serial.printf("Reading Air Quality values ... \n");
-  // ambient.ReadAirQualityChannel();
-  // Serial.printf("Write Air Quality values to ThingSpeak\n");
-  // ambient.WriteAirQualityChannel();
-  // delay(15000);
+  if(start_stop_state && wifi_connected)
+  {
+    // Serial.printf("Reading Gas Sensors values ... \n");
+    // ambient.ReadGasSensorChannel();
+    // Serial.printf("Write Gas Sensors values to ThingSpeak\n");
+    // ambient.WriteGASSensorsChannel();
+    // Serial.printf("Waiting 15 sec interval\n");
+    // delay(15000);
+    // Serial.printf("Reading Air Quality values ... \n");
+    // ambient.ReadAirQualityChannel();
+    // Serial.printf("Write Air Quality values to ThingSpeak\n");
+    // ambient.WriteAirQualityChannel();
+    // Serial.printf("Waiting 15 sec interval\n");
+    // delay(15000);
+    Serial.printf("Reading Movement values ... \n");
+    ambient.ReadMovementChannel();
+    Serial.printf("Write Movement values to ThingSpeak\n");
+    ambient.WriteMovementChannel();
+    Serial.printf("Waiting 15 sec interval\n");
+    delay(15000);
+  }
+  
   //delay(1000);
 }
 //---------------------------------------------------------------------------

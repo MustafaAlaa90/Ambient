@@ -24,9 +24,10 @@
 
  /* Common Defines */
 #define BOARD               ("ESP32")
-#define Voltage_Resolution  (3.3)
-#define ADC_Bit_Resolution  (16)      // external adc
-#define _PPM                (0)
+#define Voltage_Resolution  3.3F
+#define ADC_Bit_Resolution  16      // external adc
+#define ADC_Bit_Resolution_ESP 4096  // of esp32
+#define _PPM                1
 
 /* Butons Defines */
 #define Connect_WIFI_Pin       25
@@ -40,28 +41,28 @@
 /* CO Defines */
 #define COTYPE              ("MQ-3")
 #define CO_ADC_PIN          (0)
-#define RatioCleanAIRCO     (60)
-#define COVAL_A             (521853)
-#define COVAL_B             (-3.821) 
-#define CO_RL               (100.0)
-#define CO_R0               /*(87377.331250)*/ 54610.0  // from calibration process
+#define RatioCleanAIRCO     60.0F
+#define COVAL_A             521853.0F
+#define COVAL_B             -3.821F 
+#define CO_RL               100000.0F
+#define CO_R0               /*(87377.331250)*/ 54610.0F  // from calibration process
 
 /* CH4 Defines */
 #define CH4TYPE             ("MQ-5")
 #define CH4_ADC_PIN         (2)
-#define RatioCleanAIRCH4    (6.5)
-#define CH4VAL_A            (177.65)
-#define CH4VAL_B            (-2.56)
-#define CH4_RL              (100.0)
-#define CH4_R0              (504100.0) // from calibration process
+#define RatioCleanAIRCH4    6.5F
+#define CH4VAL_A            177.65F
+#define CH4VAL_B            -2.56F
+#define CH4_RL              100000.0F
+#define CH4_R0              504100.0F // from calibration process
 
 /* CO2 Defines */
-#define CO2_LOW             600
-#define CO2_HIGHT           1000
-#define CO2VREF             3300.0
+#define CO2_LOW             600.0F
+#define CO2_HIGHT           1000.0F
+#define CO2VREF             3300.0F
 #define CO2Samples          32768
 #define CO2PIN              39
-#define INERTIA             0.99
+#define INERTIA             0.99F
 #define TRIES               100           
 
 /* Ozone Defines */
@@ -84,7 +85,7 @@
 #define           Ozone_IICAddress          ADDRESS_3
 
 /* Sound Level Defines */
-#define           SOUND_LEVEL_PIN           33
+#define           SOUND_LEVEL_PIN           34
 
 /* UBlox Defines */
 #define UBlox_UART 2
@@ -137,6 +138,21 @@
         Air_Quality_field_TVOC,
     } Air_Quality_channel_fields;
 
+    /* Channel 3 Defines */
+    #define SECRET_MOVEMENT_ID            1377787			
+    #define SECRET_MOVEMENT_WRITE_APIKEY  "YQ7GJ56QS9BWYYD0"
+    #define MOVEMENT_READING_SIZE         7
+
+    typedef enum {
+        Movement_field_Longitude =1,
+        Movement_field_Latitude,
+        Movement_field_Altitude,
+        Movement_field_Tap,
+        Movement_field_FreeFall,
+        Movement_field_Titl,
+        Movement_field_Sound_Level,
+    } Movement_channel_fields;
+
 class CAmbientMonitor
 {
     public: 
@@ -144,7 +160,7 @@ class CAmbientMonitor
         ~CAmbientMonitor() = default;
         bool                InitGasSensorChannel();
         bool                InitAirQualityChannel();
-        bool                InitMovementChannel();
+        void                InitMovementChannel();
         void                InitButtons();
         void                InitLEDs();
 
@@ -157,6 +173,7 @@ class CAmbientMonitor
         bool                WriteMovementChannel();
         
         bool                ConnectWIFI(const char* ssid, const char* pass );
+        bool                DisconnectConnectWIFI();
         bool                IsWiFiConnected();
 
         bool                InitSDcard();
@@ -173,6 +190,7 @@ class CAmbientMonitor
         void                WPSInit();
         void                ThinkSpeakInit();
         void                SetfieldMultiple(float* fieldNRArr,uint8_t ArrSize);
+        void                SetfieldMultiple(double* fieldNRArr,uint8_t ArrSize);
         
         float               ReadCOPPM();
         float               ReadCH4PPM();
@@ -198,6 +216,7 @@ class CAmbientMonitor
         WiFiClient          client;
         float               m_GasSensorChReading[GAS_SENSOR_READING_SIZE];
         float               m_AirQualitySensorChReading[AIR_QUALITY_READING_SIZE];
+        double              m_MovementSensorChReading[MOVEMENT_READING_SIZE];
 
 
 };
