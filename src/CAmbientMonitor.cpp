@@ -84,8 +84,8 @@ void CAmbientMonitor::COInit()
     {
       //CO.update();
       int16_t adc0 = this->ads.readADC_SingleEnded(CO_ADC_PIN);
-      float volts0 = this->ads.computeVolts(adc0);
-      this->CO.setADC(volts0);
+      //float volts0 = this->ads.computeVolts(adc0);
+      this->CO.setADC((float)adc0);
       calcR0 += this->CO.calibrate(RatioCleanAIRCO);
     }
     this->CO.setR0(calcR0/float(10.0));
@@ -110,8 +110,8 @@ void CAmbientMonitor::CH4Init()
     {
       //CH4.update();
       int16_t adc2 = this->ads.readADC_SingleEnded(CH4_ADC_PIN);
-      float volts2 = this->ads.computeVolts(adc2);
-      this->CH4.setADC(volts2);
+      //float volts2 = this->ads.computeVolts(adc2);
+      this->CH4.setADC((float)adc2);
       calcR0 += this->CH4.calibrate(RatioCleanAIRCH4);
     }
     this->CH4.setR0(calcR0/float(10.0));
@@ -156,7 +156,7 @@ bool CAmbientMonitor::O3Init()
 //------------------------------------------------------------
 void CAmbientMonitor::GPSInit()
 {
-    GPS.UbloxInit(UBlox_baud,RX,TX,UBlox_UART);
+    GPS.UbloxInit(UBlox_baud);
 }
 //-------------------------------------------------------------
 void CAmbientMonitor::ThinkSpeakInit()
@@ -276,7 +276,7 @@ void CAmbientMonitor::ReadGasSensorChannel()
 {
   m_GasSensorChReading[Gas_Sensor_field_CO-1] =  ReadCOPPM();
   m_GasSensorChReading[Gas_Sensor_field_CO2-1] = (float) ReadCO2PPM();
-  m_GasSensorChReading[Gas_Sensor_field_CH4-1] = ReadCH4PPM() + float(200.0);
+  m_GasSensorChReading[Gas_Sensor_field_CH4-1] = ReadCH4PPM() /*+ float(200.0)*/;
   m_GasSensorChReading[Gas_Sensor_field_O3-1] =  ReadO3();
   SetfieldMultiple(m_GasSensorChReading,GAS_SENSOR_READING_SIZE);
   ThingSpeak.setLatitude(29.957441748034174);
@@ -317,22 +317,20 @@ bool CAmbientMonitor::ReadAirQualityChannel()
 //------------------------------------------------------------
 bool CAmbientMonitor::ReadMovementChannel()
 {
-  if(GPS.getfixCount()>0)
-  {
-    double lat,lng,alt;
-    GPS.getInfo(&lat,&lng,&alt);
-    m_MovementSensorChReading[Movement_field_Longitude-1]= lat;
-    m_MovementSensorChReading[Movement_field_Latitude-1]= lng;
-    m_MovementSensorChReading[Movement_field_Altitude-1]= alt;
-  }
-  else
-  {
-    Serial.printf("Waiting for GPS to Fix\n");
-  }
   m_MovementSensorChReading[Movement_field_Sound_Level-1]= (double)ReadSoundLevel();
+  double lat=0.0,lng=0.0,alt=0.0;
+  GPS.getInfo(&lat,&lng,&alt);
+  Serial.printf("lat = %lf , lng = %lf , alt = %lf\n",lat,lng,alt);
+  Serial.printf("Fix count = %d\n",GPS.getfixCount());
+  // if(GPS.getfixCount()>0)
+  // {
+    m_MovementSensorChReading[Movement_field_Longitude-1]= lng;
+    m_MovementSensorChReading[Movement_field_Latitude-1]= lat;
+    m_MovementSensorChReading[Movement_field_Altitude-1]= alt;
+  // }
   SetfieldMultiple(m_MovementSensorChReading,MOVEMENT_READING_SIZE);
-  ThingSpeak.setLatitude(29.957441748034174);
-  ThingSpeak.setLongitude(30.912880079820305);
+  ThingSpeak.setLatitude((float)m_MovementSensorChReading[Movement_field_Latitude-1]);
+  ThingSpeak.setLongitude((float)m_MovementSensorChReading[Movement_field_Longitude-1]);
 
 }
 //-------------------------------------------------------------
@@ -342,10 +340,10 @@ float CAmbientMonitor::ReadCOPPM()
     Serial.printf("Begin ADC Driver ...\n");
     ads.begin(); // begin externa adc
     Serial.printf("Read CO from ADC Driver\n");
-    int16_t adc0 = ads.readADC_SingleEnded(0);
-    float volts0 = ads.computeVolts(adc0);
-    Serial.printf("CO volt = %f\n",volts0);
-    CO.setADC(volts0);
+    int16_t adc0 = ads.readADC_SingleEnded(CO_ADC_PIN);
+    //float volts0 = ads.computeVolts(adc0);
+    Serial.printf("CO samples = %f\n",(float)adc0);
+    CO.setADC((float)adc0);
     float co = CO.readSensor();
     Serial.printf("CO PPM = %f\n",co);
     return co;
@@ -356,10 +354,10 @@ float CAmbientMonitor::ReadCH4PPM()
     Serial.printf("Begin ADC Driver ...\n");
     ads.begin(); // begin externa adc
     Serial.printf("Read CH4 from ADC Driver\n");
-    int16_t adc2 = ads.readADC_SingleEnded(2);
-    float volts2 = ads.computeVolts(adc2);
-    Serial.printf("CH4 volts = %f\n",volts2);
-    CH4.setADC(volts2);
+    int16_t adc2 = ads.readADC_SingleEnded(CH4_ADC_PIN);
+    //float volts2 = ads.computeVolts(adc2);
+    Serial.printf("CH4 samples = %f\n",(float)adc2);
+    CH4.setADC((float)adc2);
     float ch4 = CH4.readSensor();
     Serial.printf("CH4 PPM = %f\n",ch4);
     return ch4;
@@ -385,16 +383,17 @@ float CAmbientMonitor::ReadO3()
 float CAmbientMonitor::ReadSoundLevel()
 {
     float voltage =0;
-    uint16_t voltageValue =0;
-    for(int i=0;i<100;i++)
+    float voltageValue =0;
+    for(int i=0;i<10;i++)
     {
         voltageValue=voltageValue+analogRead(SOUND_LEVEL_PIN);
-        delay(2);
+        delay(10);
     }
-    Serial.printf("Sound level =%d \n",voltageValue);
-    Serial.printf("Sound level =%f \n",voltageValue/100.0);
-    voltage = (voltageValue / ADC_Bit_Resolution_ESP * Voltage_Resolution)/100.0;
-    Serial.printf("Sound levl = %f dbA\n",voltage * 50.0);
+    //Serial.printf("Sound level =%d \n",voltageValue);
+    Serial.printf("Sound level =%f \n",voltageValue/10.0);
+    voltage = (voltageValue / ADC_Bit_Resolution_ESP * Voltage_Resolution)/10.0;
+    Serial.printf("Sound levl = %f V\n",voltage);
+    Serial.printf("Sound levl = %f dbA\n",voltage*50.0);
     return voltage * 50.0;  //convert voltage to decibel value
 }
 //-------------------------------------------------------------
@@ -426,7 +425,10 @@ bool CAmbientMonitor::ReadBME(float* pressure, float* voc)
   }
   *pressure = bme.pressure / 100.0;
   *voc      = bme.gas_resistance / 1000.0;
+
   Serial.printf("Pressure = %f hPa , TVOC = %f KOhms\n",*pressure,*voc);
+  Serial.printf("Humidity from BME = %f%\n",bme.humidity);
+  Serial.printf("Temp from BME = %f\n",bme.temperature);
   return true;
   //Serial.print(bme.readAltitude(SEALEVELPRESSURE_HPA));
 }
@@ -535,7 +537,7 @@ bool CAmbientMonitor::ConnectWIFI(const char* ssid, const char* pass )
 }
 bool CAmbientMonitor::DisconnectConnectWIFI()
 {
-  return WiFi.disconnect();
+  return WiFi.disconnect(false,true);
 }
 //------------------------------------------------------------------
 bool CAmbientMonitor::IsWiFiConnected()

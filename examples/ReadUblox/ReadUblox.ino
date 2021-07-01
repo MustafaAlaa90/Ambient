@@ -11,8 +11,8 @@ void setup()
 }
 void loop()
 {
-    double lat,double lng,double meters;
+    double lat,lng, meters;
     gps.getInfo(&lat,&lng,&meters);
-    Serial.println(gps.getfixCount());
+    Serial.printf("fix count = %d\n",gps.getfixCount());
     delay(1000);
 }

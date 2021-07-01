@@ -69,14 +69,12 @@ void setup()
     attachInterrupt(digitalPinToInterrupt(Start_Stop_Reading_Pin), isr_Start_Stop, FALLING);
     attachInterrupt(digitalPinToInterrupt(Reset_Pin), isr_Reset, FALLING);
     //-----------------------------------------------------------------------
-    // Serial.println("Init WPS ...");
-    // WiFi.onEvent(WiFiEvent);
-    // WiFi.mode(WIFI_MODE_STA);
-    // WiFi.disconnect(true);
-    // wpsInitConfig();
-    // esp_wifi_wps_enable(&config);
-    // WiFi.begin();
-    // esp_wifi_wps_start(0);
+    Serial.println("Init WPS ...");
+    WiFi.onEvent(WiFiEvent);
+    WiFi.mode(WIFI_MODE_STA);
+    wpsInitConfig();
+    esp_wifi_wps_enable(&config);
+    esp_wifi_wps_start(0);
    //-------------------------------------------------------------------------
    Serial.printf("Init thingspeak client ...\n");
    ambient.ThinkSpeakInit();
@@ -99,28 +97,26 @@ void setup()
 
 void loop()
 {
-  
   if(!wifi_connected && connect_state)
   {
     Serial.printf("inside condition of connect_state = true\n");
-    wifi_connected = ambient.ConnectWIFI("Esraa","Esraa+28121995"); 
-    if(wifi_connected)
+    esp_wifi_wps_enable(&config);
+    esp_wifi_wps_start(0);
+    bool led=false;
+    while(WiFi.status() != WL_CONNECTED)
     {
-      Serial.printf("Successfully connected to wifi\n");
-      digitalWrite(WWIFI_LED,HIGH);
+      digitalWrite(WWIFI_LED,led);
+      led=!led;
+      Serial.printf("waiting for connection\n");
+      delay(250);
     }
-    else
-    {
-      Serial.printf("Could not connect to wifi network ... reading will be saved to SD Card\n");
-      digitalWrite(WWIFI_LED,LOW);
-      wifi_connected = false;
-    }
-    delay(1000);
+    wifi_connected = true;
+    digitalWrite(WWIFI_LED,HIGH);
   }
   else if(wifi_connected && !connect_state)
   {
     Serial.printf("inside condition of connect state = false\n");
-    if(ambient.DisconnectConnectWIFI())
+    if(esp_wifi_wps_disable() == ESP_OK && ambient.DisconnectConnectWIFI())
     {
       Serial.printf("Successfully disconnected from wifi\n");
       digitalWrite(WWIFI_LED,LOW);
@@ -131,23 +127,27 @@ void loop()
       Serial.printf("Couldn't disconnect from wifi\n");
       digitalWrite(WWIFI_LED,HIGH);
     }
+  }
+  else if(!wifi_connected && !connect_state || !start_stop_state)
+  {
+    Serial.printf("WIFI Disconnected or Reading Stoped\n");
     delay(1000);
   }
   //-----------------------------------------
   if(start_stop_state && wifi_connected)
   {
-    // Serial.printf("Reading Gas Sensors values ... \n");
-    // ambient.ReadGasSensorChannel();
-    // Serial.printf("Write Gas Sensors values to ThingSpeak\n");
-    // ambient.WriteGASSensorsChannel();
-    // Serial.printf("Waiting 15 sec interval\n");
-    // delay(15000);
-    // Serial.printf("Reading Air Quality values ... \n");
-    // ambient.ReadAirQualityChannel();
-    // Serial.printf("Write Air Quality values to ThingSpeak\n");
-    // ambient.WriteAirQualityChannel();
-    // Serial.printf("Waiting 15 sec interval\n");
-    // delay(15000);
+    Serial.printf("Reading Gas Sensors values ... \n");
+    ambient.ReadGasSensorChannel();
+    Serial.printf("Write Gas Sensors values to ThingSpeak\n");
+    ambient.WriteGASSensorsChannel();
+    Serial.printf("Waiting 15 sec interval\n");
+    delay(15000);
+    Serial.printf("Reading Air Quality values ... \n");
+    ambient.ReadAirQualityChannel();
+    Serial.printf("Write Air Quality values to ThingSpeak\n");
+    ambient.WriteAirQualityChannel();
+    Serial.printf("Waiting 15 sec interval\n");
+    delay(15000);
     Serial.printf("Reading Movement values ... \n");
     ambient.ReadMovementChannel();
     Serial.printf("Write Movement values to ThingSpeak\n");
@@ -155,8 +155,6 @@ void loop()
     Serial.printf("Waiting 15 sec interval\n");
     delay(15000);
   }
-  
-  //delay(1000);
 }
 //---------------------------------------------------------------------------
 void WiFiEvent(WiFiEvent_t event, system_event_info_t info){

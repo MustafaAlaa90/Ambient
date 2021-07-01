@@ -12,10 +12,10 @@ void setup()
 
 void loop()
 {
-    float voltageValue=0,
+    float voltageValue=0;
     float dbValue = 0;
     float voltage =0;
-    voltageValue = analogRead(36);
+    voltageValue = analogRead(34);
     voltage = voltageValue / MAX_AD_SAMPLES * VREF;
     Serial.print("analog volt = ");
     Serial.println(voltage);

@@ -4,7 +4,7 @@
 
 #include "WiFi.h"
 #include "esp_wps.h"
-#include "SparkFun_ADXL345.h"
+//#include "SparkFun_ADXL345.h"
 #include "MQUnifiedsensor.h"
 #include "CO2Sensor.h"
 #include "DFRobot_OzoneSensor.h"
@@ -25,7 +25,7 @@
  /* Common Defines */
 #define BOARD               ("ESP32")
 #define Voltage_Resolution  3.3F
-#define ADC_Bit_Resolution  16      // external adc
+#define ADC_Bit_Resolution  32768      // external adc
 #define ADC_Bit_Resolution_ESP 4096  // of esp32
 #define _PPM                1
 
@@ -44,7 +44,7 @@
 #define RatioCleanAIRCO     60.0F
 #define COVAL_A             521853.0F
 #define COVAL_B             -3.821F 
-#define CO_RL               100000.0F
+#define CO_RL               100.0F
 #define CO_R0               /*(87377.331250)*/ 54610.0F  // from calibration process
 
 /* CH4 Defines */
@@ -53,17 +53,17 @@
 #define RatioCleanAIRCH4    6.5F
 #define CH4VAL_A            177.65F
 #define CH4VAL_B            -2.56F
-#define CH4_RL              100000.0F
+#define CH4_RL              20.0F
 #define CH4_R0              504100.0F // from calibration process
 
 /* CO2 Defines */
 #define CO2_LOW             600.0F
 #define CO2_HIGHT           1000.0F
 #define CO2VREF             3300.0F
-#define CO2Samples          32768
+#define CO2Samples          4096
 #define CO2PIN              39
 #define INERTIA             0.99F
-#define TRIES               100           
+#define TRIES               10           
 
 /* Ozone Defines */
 #define           ADDRESS_0                 0x70           // iic slave Address

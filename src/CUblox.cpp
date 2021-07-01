@@ -12,12 +12,13 @@ void CUblox::UbloxInit( unsigned long baud, int8_t rxPin, int8_t txPin, uint32_t
     m_serial.begin(baud,config,rxPin,txPin);
 }
 //-----------------------------------------------
-void CUblox::getInfo(double* lat,double* lng,double* meters)
+void CUblox::getInfo(double* lat,double* lng,double* miles)
 {
   while(m_serial.available()>0)
   {
     m_gps.encode(m_serial.read());
   }
+
   if (m_gps.location.isValid())
   {
     Serial.println(m_gps.location.lat(), 6);
@@ -26,8 +27,8 @@ void CUblox::getInfo(double* lat,double* lng,double* meters)
     Serial.println(m_gps.location.lng(), 6);
     *lng = m_gps.location.lng();
     Serial.print("Altitude: ");
-    *meters = m_gps.altitude.meters();
-    Serial.println(m_gps.altitude.meters());
+    *miles = m_gps.altitude.miles();
+    Serial.println(m_gps.altitude.miles());
   }
   else
   {
@@ -67,8 +68,5 @@ void CUblox::getInfo(double* lat,double* lng,double* meters)
   {
     Serial.println("Not Available");
   }
-
-  Serial.println();
-  Serial.println();
   delay(1000);
 }

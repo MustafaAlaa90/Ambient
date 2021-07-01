@@ -29,7 +29,7 @@ void MQUnifiedsensor::setRL(float RL) {
 void MQUnifiedsensor::setADC(float value)
 {
 
-  this->_sensor_volt = (value) /** _VOLT_RESOLUTION / ((pow(2, _ADC_Bit_Resolution)) - 1)*/; 
+  this->_sensor_volt = value * _VOLT_RESOLUTION / _ADC_Bit_Resolution; 
   Serial.printf("this-> _sensor_volt = %f, value = %f\n",this->_sensor_volt,value);
   this->_adc =  value;
 }
@@ -132,7 +132,7 @@ float MQUnifiedsensor::readSensor()
 {
   //Serial.printf("sensor volt =%f \n",_sensor_volt);
   //More explained in: https://jayconsystems.com/blog/understanding-a-gas-sensor
-  _RS_Calc = /*18.3965;*/((this->_VOLT_RESOLUTION*this->_RL)/this->_sensor_volt)-this->_RL; //Get value of RS in a gas
+  _RS_Calc = ((this->_VOLT_RESOLUTION*this->_RL)/this->_sensor_volt)-this->_RL; //Get value of RS in a gas
   Serial.printf("_RS_Calc = %f\n",_RS_Calc);
   if(_RS_Calc < 0)  _RS_Calc = 0; //No negative values accepted.
   _ratio = _RS_Calc / this->_R0;   // Get ratio RS_gas/RS_air
