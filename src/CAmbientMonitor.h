@@ -19,6 +19,9 @@
 #include "FS.h"
 #include "SD.h"
 #include "SPI.h"
+#include "ADXL345.h"
+#include "ESP32Time.h"
+#include "algorithm"
 
 
 
@@ -28,6 +31,8 @@
 #define ADC_Bit_Resolution  32768      // external adc
 #define ADC_Bit_Resolution_ESP 4096  // of esp32
 #define _PPM                1
+#define PowrPIN             36
+#define DATE_TIME_SIZE      30
 
 /* Butons Defines */
 #define Connect_WIFI_Pin       25
@@ -119,7 +124,8 @@
         Gas_Sensor_field_O3,
         Gas_Sensor_field_NO,
         Gas_Sensor_field_NO2,
-        Gas_Sensor_field_SO2
+        Gas_Sensor_field_SO2,
+        Gas_Sensor_field_power_monitor
     } gas_sensors_channel_fields;
 
 /* Channel 2 Defines */
@@ -141,7 +147,7 @@
     /* Channel 3 Defines */
     #define SECRET_MOVEMENT_ID            1377787			
     #define SECRET_MOVEMENT_WRITE_APIKEY  "YQ7GJ56QS9BWYYD0"
-    #define MOVEMENT_READING_SIZE         7
+    #define MOVEMENT_READING_SIZE         8
 
     typedef enum {
         Movement_field_Longitude =1,
@@ -151,6 +157,7 @@
         Movement_field_FreeFall,
         Movement_field_Titl,
         Movement_field_Sound_Level,
+        Movement_field_wifi_signal
     } Movement_channel_fields;
 
 class CAmbientMonitor
@@ -177,8 +184,13 @@ class CAmbientMonitor
         bool                IsWiFiConnected();
 
         bool                InitSDcard();
-        std::string         ReadFromScCard(std::string fileDir);
-        bool                WriteToSDcrd(std::string fileDir,std::string val);
+        bool                ReadFromSDCard(fs::FS &fs, const char * path);
+        void                WriteToSDCard(fs::FS &fs, const char * path, const char * message);
+        void                WriteLog();
+
+        void                WriteGasSesnorsLog();
+        void                WriteAirQualityLog();
+        void                WriteMovementLog();
         void                COInit();
         void                CH4Init();
         void                CO2Init();
@@ -188,6 +200,8 @@ class CAmbientMonitor
         void                DHTInit();
         bool                SPSInit();
         void                WPSInit();
+
+        void                InitADXL();
         void                ThinkSpeakInit();
         void                SetfieldMultiple(float* fieldNRArr,uint8_t ArrSize);
         void                SetfieldMultiple(double* fieldNRArr,uint8_t ArrSize);
@@ -201,6 +215,10 @@ class CAmbientMonitor
         bool                ReadBME(float* pressure,float* voc);
         bool                ReadSPS(float* pm1,float* pm2,float* pm4,float* pm10);
         bool                ReadDHT(float* temp,float* hum);
+        float               ReadPowerPin();
+        float               ReadWIFISignal();
+        void                ReadADXL(float* tap,float* tilt,float* freefall);
+        void                ReadDateTime();
 
     private:
         String wpspin2string(uint8_t a[]);
@@ -214,9 +232,15 @@ class CAmbientMonitor
         DHT_Unified         DHT;
         Adafruit_ADS1115    ads;
         WiFiClient          client;
+        ADXL345             accelerometer;
         float               m_GasSensorChReading[GAS_SENSOR_READING_SIZE];
         float               m_AirQualitySensorChReading[AIR_QUALITY_READING_SIZE];
         double              m_MovementSensorChReading[MOVEMENT_READING_SIZE];
+        String              m_date;
+        String              m_time;
+        String              m_dateTimeRTC;
+        uint32_t            m_size;
+        //ESP32Time           esptime;
 
 
 };

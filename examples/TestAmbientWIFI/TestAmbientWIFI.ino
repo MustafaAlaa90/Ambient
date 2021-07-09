@@ -91,8 +91,11 @@ void setup()
    }
    Serial.println("Init Movement channel .... \n");
    ambient.InitMovementChannel();
+   Serial.printf("Init SD Card\n");
+   ambient.InitSDcard();
   Serial.printf("Waiting for Gas Sensor to heat up ....\n");
   delay(2000);
+  //SD.remove("/log.txt");
 }
 
 void loop()
@@ -130,12 +133,13 @@ void loop()
   }
   else if(!wifi_connected && !connect_state || !start_stop_state)
   {
-    Serial.printf("WIFI Disconnected or Reading Stoped\n");
+    Serial.printf("WIFI Disconnected, readings will be wrote in sd card only or Reading Stoped\n");
     delay(1000);
-  }
+  }  
   //-----------------------------------------
-  if(start_stop_state && wifi_connected)
+  if(start_stop_state)
   {
+    ESP32Time.set_time();
     Serial.printf("Reading Gas Sensors values ... \n");
     ambient.ReadGasSensorChannel();
     Serial.printf("Write Gas Sensors values to ThingSpeak\n");
@@ -154,6 +158,9 @@ void loop()
     ambient.WriteMovementChannel();
     Serial.printf("Waiting 15 sec interval\n");
     delay(15000);
+    //Serial.printf("Writing to SD Card\n");
+    //ambient.WriteLog();
+    //ambient.ReadFromSDCard(SD, "/log.txt");
   }
 }
 //---------------------------------------------------------------------------

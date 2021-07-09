@@ -39,6 +39,7 @@ bool CAmbientMonitor::InitGasSensorChannel()
   Ret = O3Init();
   Serial.printf("initialize CH4 ...\n");
   CH4Init();
+  InitADXL();
   memset(m_GasSensorChReading,0,GAS_SENSOR_READING_SIZE);
   return Ret;
 }
@@ -210,6 +211,38 @@ void CAmbientMonitor::DHTInit()
     DHT.begin();
 }
 //-------------------------------------------------------------
+void CAmbientMonitor::InitADXL()
+{
+  Serial.println("Initialize L3G4200D");
+
+  if (!accelerometer.begin())
+  {
+    Serial.println("Could not find a valid ADXL345 sensor, check wiring!");
+    delay(500);
+  }
+
+  // Values for Free Fall detection
+  accelerometer.setFreeFallThreshold(0.35); // Recommended 0.3 -0.6 g
+  accelerometer.setFreeFallDuration(0.1);  // Recommended 0.1 s
+
+  // Select INT 1 for get activities
+  accelerometer.useInterrupt(ADXL345_INT1);
+
+  accelerometer.setRange(ADXL345_RANGE_8G);
+
+// Set tap detection on Z-Axis
+  accelerometer.setTapDetectionX(0);       // Don't check tap on X-Axis
+  accelerometer.setTapDetectionY(0);       // Don't check tap on Y-Axis
+  accelerometer.setTapDetectionZ(1);       // Check tap on Z-Axis
+  // or
+  // accelerometer.setTapDetectionXYZ(1);  // Check tap on X,Y,Z-Axis
+
+  accelerometer.setTapThreshold(2.5);      // Recommended 2.5 g
+  accelerometer.setTapDuration(0.02);      // Recommended 0.02 s
+  accelerometer.setDoubleTapLatency(0.10); // Recommended 0.10 s
+  accelerometer.setDoubleTapWindow(0.30);  // Recommended 0.30 s
+}
+//-------------------------------------------------------------
 void CAmbientMonitor::SetfieldMultiple(float* channelArr,uint8_t ArrSize)
 {
     for (uint8_t i=1;i<=ArrSize;i++)
@@ -278,9 +311,12 @@ void CAmbientMonitor::ReadGasSensorChannel()
   m_GasSensorChReading[Gas_Sensor_field_CO2-1] = (float) ReadCO2PPM();
   m_GasSensorChReading[Gas_Sensor_field_CH4-1] = ReadCH4PPM() /*+ float(200.0)*/;
   m_GasSensorChReading[Gas_Sensor_field_O3-1] =  ReadO3();
+  m_GasSensorChReading[Gas_Sensor_field_power_monitor-1] =  ReadPowerPin();
   SetfieldMultiple(m_GasSensorChReading,GAS_SENSOR_READING_SIZE);
   ThingSpeak.setLatitude(29.957441748034174);
   ThingSpeak.setLongitude(30.912880079820305);
+  ReadDateTime();
+  WriteGasSesnorsLog();
 }
 //-----------------------------------------------------------
 bool CAmbientMonitor::ReadAirQualityChannel()
@@ -313,14 +349,19 @@ bool CAmbientMonitor::ReadAirQualityChannel()
   SetfieldMultiple(m_AirQualitySensorChReading,AIR_QUALITY_READING_SIZE);
   ThingSpeak.setLatitude(29.957441748034174);
   ThingSpeak.setLongitude(30.912880079820305);
+  ReadDateTime();
+  WriteAirQualityLog();
 }
 //------------------------------------------------------------
 bool CAmbientMonitor::ReadMovementChannel()
 {
   m_MovementSensorChReading[Movement_field_Sound_Level-1]= (double)ReadSoundLevel();
   double lat=0.0,lng=0.0,alt=0.0;
-  GPS.getInfo(&lat,&lng,&alt);
+  m_date="";
+  m_time="";
+  GPS.getInfo(&lat,&lng,&alt,m_date,m_time);
   Serial.printf("lat = %lf , lng = %lf , alt = %lf\n",lat,lng,alt);
+  Serial.printf("Date GPS = %s , Time GPS = %s\n",m_date.c_str(),m_time.c_str());
   Serial.printf("Fix count = %d\n",GPS.getfixCount());
   // if(GPS.getfixCount()>0)
   // {
@@ -328,9 +369,20 @@ bool CAmbientMonitor::ReadMovementChannel()
     m_MovementSensorChReading[Movement_field_Latitude-1]= lat;
     m_MovementSensorChReading[Movement_field_Altitude-1]= alt;
   // }
+  float tap = 0;
+  float tilt = 0;
+  float freefall = 0;
+  ReadADXL(&tap,&tilt,&freefall);
+  Serial.printf("tap = %f , tilt = %f , freefall = %f\n",tap,tilt,freefall);
+  m_MovementSensorChReading[Movement_field_Tap-1] = tap;
+  m_MovementSensorChReading[Movement_field_Titl-1] = tilt;
+  m_MovementSensorChReading[Movement_field_FreeFall-1] = freefall;
+  m_MovementSensorChReading[Movement_field_wifi_signal-1]= ReadWIFISignal();
   SetfieldMultiple(m_MovementSensorChReading,MOVEMENT_READING_SIZE);
   ThingSpeak.setLatitude((float)m_MovementSensorChReading[Movement_field_Latitude-1]);
   ThingSpeak.setLongitude((float)m_MovementSensorChReading[Movement_field_Longitude-1]);
+  ReadDateTime();
+  WriteMovementLog();
 
 }
 //-------------------------------------------------------------
@@ -399,7 +451,7 @@ float CAmbientMonitor::ReadSoundLevel()
 //-------------------------------------------------------------
 void CAmbientMonitor::ReadGPSInfo(double* lat,double* lng,double* meters)
 {
-    GPS.getInfo(lat,lng,meters);
+    GPS.getInfo(lat,lng,meters,m_date,m_time);
 }
 //--------------------------------------------------------------
 bool CAmbientMonitor::ReadBME(float* pressure, float* voc)
@@ -547,6 +599,7 @@ bool CAmbientMonitor::IsWiFiConnected()
 //---------------------------------------------------------------
 bool CAmbientMonitor::InitSDcard()
 {
+  bool ret = false;
   char trials = 0;
   while(!SD.begin() && trials < 3)
   {
@@ -559,10 +612,21 @@ bool CAmbientMonitor::InitSDcard()
     uint64_t usedcardBytes = SD.usedBytes() / (1024 * 1024);
     Serial.printf("SD Card Total Bytes: %lluMB\n", totalcardBytes);
     Serial.printf("SD Card Used Bytes: %lluMB\n", usedcardBytes);
+    // if(!SD.exists("/log.txt"))
+    // {
+    //   File file = SD.open("/log.txt", FILE_WRITE);
+    //   if(!file){
+    //       Serial.println("Failed to open file for writing");
+    //       return false;
+    //   }
+    //   file.close();
+    // }
+    ret = true;
   }
+  return ret;
 }
 //----------------------------------------------------------------
-void appendFile(fs::FS &fs, const char * path, const char * message)
+void CAmbientMonitor::WriteToSDCard(fs::FS &fs, const char * path, const char * message)
 {
     Serial.printf("Appending to file: %s\n", path);
 
@@ -579,7 +643,8 @@ void appendFile(fs::FS &fs, const char * path, const char * message)
     file.close();
 }
 //-------------------------------------------------------------------
-bool readFile(fs::FS &fs, const char * path, char* message){
+bool CAmbientMonitor::ReadFromSDCard(fs::FS &fs, const char * path)
+{
     Serial.printf("Reading file: %s\n", path);
 
     File file = fs.open(path);
@@ -588,11 +653,157 @@ bool readFile(fs::FS &fs, const char * path, char* message){
         Serial.println("Failed to open file for reading");
         return false;
     }
-
-    Serial.print("Read from file: ");
+    m_size=file.size();
+    Serial.printf("Log File Size = %lu\n",m_size);
+    Serial.print("Read from file:\n");
     while(file.available()){
         Serial.write(file.read());
     }
     file.close();
     return true;
+}
+void CAmbientMonitor::WriteGasSesnorsLog()
+{
+  String log =  /*m_date + "|" + m_time + "|"*/ m_dateTimeRTC
+  + "CO:"+String(m_GasSensorChReading[Gas_Sensor_field_CO-1],4)
+  + " | CO2:"+String(m_GasSensorChReading[Gas_Sensor_field_CO2-1],4)
+  + " | CH4:"+String(m_GasSensorChReading[Gas_Sensor_field_CH4-1],4)
+  + " | O3:"+String(m_GasSensorChReading[Gas_Sensor_field_O3-1],4)
+  + " | NO:"+String(m_GasSensorChReading[Gas_Sensor_field_NO-1],4)
+  + " | NO2:"+String(m_GasSensorChReading[Gas_Sensor_field_NO2-1],4)
+  + " | SO2:"+String(m_GasSensorChReading[Gas_Sensor_field_SO2-1],4)
+  + " | PWR:"+String(m_GasSensorChReading[Gas_Sensor_field_power_monitor-1],4)
+  +"\n";
+  WriteToSDCard(SD, "/log.txt", log.c_str());
+}
+//-------------------------------------------------------------------------
+void CAmbientMonitor::WriteAirQualityLog()
+{
+  String log = /*m_date + "|" + m_time + "|"*/ m_dateTimeRTC
+  + "PM1:"+String(m_AirQualitySensorChReading[Air_Quality_field_PM1-1],4)
+  + " | PM25:"+String(m_AirQualitySensorChReading[Air_Quality_field_PM25-1],4)
+  + " | PM4:"+String(m_AirQualitySensorChReading[Air_Quality_field_PM4-1],4)
+  + " | PM10:"+String(m_AirQualitySensorChReading[Air_Quality_field_PM10-1],4)
+  + " | TEMP:"+String(m_AirQualitySensorChReading[Air_Quality_field_TEMP-1],4)
+  + " | PRESSURE:"+String(m_AirQualitySensorChReading[Air_Quality_field_PRESSURE-1],4)
+  + " | HUMIDITY:"+String(m_AirQualitySensorChReading[Air_Quality_field_HUMIDITY-1],4)
+  + " | TVOC:"+String(m_AirQualitySensorChReading[Air_Quality_field_TVOC-1],4)
+  +"\n";
+  WriteToSDCard(SD, "/log.txt", log.c_str());
+}
+//-------------------------------------------------------------------------------
+void CAmbientMonitor::WriteMovementLog()
+{
+  String log =  /*m_date + "|" + m_time + "|"*/ m_dateTimeRTC
+  + "LAT:"+String(m_MovementSensorChReading[Movement_field_Longitude-1],4)
+  + " | LNG:"+String(m_MovementSensorChReading[Movement_field_Latitude-1],4)
+  + " | ALT:"+String(m_MovementSensorChReading[Movement_field_Altitude-1],4)
+  + " | TAP:"+String(m_MovementSensorChReading[Movement_field_Tap-1],4)
+  + " | FREEFALL:"+String(m_MovementSensorChReading[Movement_field_FreeFall-1],4)
+  + " | TILT:"+String(m_MovementSensorChReading[Movement_field_Titl-1],4)
+  + " | SOUNDLEVEL:"+String(m_MovementSensorChReading[Movement_field_Sound_Level-1],4)
+  + " | WIFI SIG:"+String(m_MovementSensorChReading[Movement_field_wifi_signal-1],4)
+  +"\n";
+  WriteToSDCard(SD, "/log.txt", log.c_str());
+}
+//----------------------------------------------------------------------------------------
+void CAmbientMonitor::WriteLog()
+{
+  WriteGasSesnorsLog();
+  WriteAirQualityLog();
+  WriteMovementLog();
+  ReadFromSDCard(SD, "/log.txt");
+
+}
+//----------------------------------------------------------------------------------------------
+float CAmbientMonitor::ReadPowerPin()
+{
+  float power = analogRead(PowrPIN);
+  Serial.printf("power samples = %f\n",power);
+  float powervol = power/ADC_Bit_Resolution_ESP * Voltage_Resolution;
+  Serial.printf("POWER Value = %f\n",powervol);
+  powervol = powervol*2;
+  Serial.printf("final monitored power = %f\n",powervol);
+  return powervol;
+}
+//-------------------------------------------------------------------------------------------
+float CAmbientMonitor::ReadWIFISignal()
+{
+  float sig = (float)WiFi.RSSI();
+  Serial.printf("wifi signal = %f\n",sig);
+  return sig;
+}
+//-------------------------------------------------------------------------------------------
+void CAmbientMonitor::ReadADXL(float* tap,float* tilt,float* freefall)
+{
+  Vector raw = accelerometer.readRaw();
+  Serial.printf("raw values x = %f , y = %f , z = %f\n",raw.XAxis,raw.YAxis,raw.ZAxis);
+  Vector norm = accelerometer.readNormalize();
+  Serial.printf("norm values x = %f , y = %f , z = %f\n",norm.XAxis,norm.YAxis,norm.ZAxis);
+
+  // Read activities
+  Activites activ = accelerometer.readActivites();
+
+  if (activ.isFreeFall)
+  {
+    Serial.println("Free Fall Detected!");
+    *freefall = 1;
+  }
+  if (activ.isDoubleTap)
+  {
+    Serial.println("Double Tap Detected");
+  } else
+  if (activ.isTap)
+  {
+    Serial.println("Tap Detected");
+    *tap = 1;
+  }
+
+  Vector filtered = accelerometer.lowPassFilter(norm, 0.5);
+
+  // Calculate Pitch & Roll
+  int pitch = -(atan2(norm.XAxis, sqrt(norm.YAxis*norm.YAxis + norm.ZAxis*norm.ZAxis))*180.0)/M_PI;
+  int roll  = (atan2(norm.YAxis, norm.ZAxis)*180.0)/M_PI;
+
+  // Calculate Pitch & Roll (Low Pass Filter)
+  int fpitch = -(atan2(filtered.XAxis, sqrt(filtered.YAxis*filtered.YAxis + filtered.ZAxis*filtered.ZAxis))*180.0)/M_PI;
+  int froll  = (atan2(filtered.YAxis, filtered.ZAxis)*180.0)/M_PI;
+
+  // Output
+  Serial.print(" Pitch = ");
+  Serial.print(pitch);
+  Serial.print(" Roll = ");
+  Serial.print(roll);
+
+  // Output (filtered)
+  Serial.print(" (filter)Pitch = ");
+  Serial.print(fpitch);
+  Serial.print(" (filter)Roll = ");
+  Serial.print(froll);
+  Serial.println();
+
+  if(pitch != -10 || roll !=0)
+  {
+    Serial.printf("Titl detected\n");
+    *tilt = 1;
+  }
+}
+//---------------------------------------------------------------
+void CAmbientMonitor::ReadDateTime()
+{
+  time_t t = time(NULL);
+  struct tm *t_st;
+  t_st = localtime(&t);
+  // Serial.printf("year: %d\n", 1900 + t_st->tm_year);
+  // Serial.printf("month: %d\n", 1 + t_st->tm_mon);
+  // Serial.printf("month day: %d\n", t_st->tm_mday);
+  // Serial.printf("week day: %c%c\n", "SMTWTFS"[t_st->tm_wday], "uouehra"[t_st->tm_wday]);
+  // Serial.printf("year day: %d\n", 1 + t_st->tm_yday);
+  // Serial.printf("hour: %d\n", t_st->tm_hour);
+  // Serial.printf("minute: %d\n", t_st->tm_min);
+  // Serial.printf("second: %d\n", t_st->tm_sec);
+  Serial.printf("ctime: %s\n", ctime(&t));
+  m_dateTimeRTC = ctime(&t);
+  //dateTime.replace( '\n', 0);
+
 }

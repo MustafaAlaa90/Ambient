@@ -12,7 +12,7 @@ void CUblox::UbloxInit( unsigned long baud, int8_t rxPin, int8_t txPin, uint32_t
     m_serial.begin(baud,config,rxPin,txPin);
 }
 //-----------------------------------------------
-void CUblox::getInfo(double* lat,double* lng,double* miles)
+void CUblox::getInfo(double* lat,double* lng,double* miles,String& date,String& time)
 {
   while(m_serial.available()>0)
   {
@@ -43,6 +43,7 @@ void CUblox::getInfo(double* lat,double* lng,double* miles)
     Serial.print(m_gps.date.day());
     Serial.print("/");
     Serial.println(m_gps.date.year());
+    date = String(m_gps.date.month())+"/"+String(m_gps.date.day())+"/"+String(m_gps.date.year());
   }
   else
   {
@@ -63,6 +64,7 @@ void CUblox::getInfo(double* lat,double* lng,double* miles)
     Serial.print(".");
     if (m_gps.time.centisecond() < 10) Serial.print(F("0"));
     Serial.println(m_gps.time.centisecond());
+    time = String(m_gps.time.hour())+":"+String(m_gps.time.minute())+":"+String(m_gps.time.second());
   }
   else
   {
