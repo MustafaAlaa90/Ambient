@@ -26,7 +26,7 @@ CO2Sensor::CO2Sensor(int analogPin, float inertia, int tries){
 }
 
 double CO2Sensor::read(){
-  int v = 0;
+  float v = 0;
 
   analogRead(_analogPin);
   for (int i = 0; i < _tries; i++)
@@ -52,11 +52,11 @@ double CO2Sensor::read(){
   Serial.println(" ppm");
   #endif
 
-  if (_co2ppm<CO2_LOW) _greenLevel = 255;
-  else {
-    if (_co2ppm>CO2_HIGHT) _greenLevel = 0;
-    else _greenLevel = map(_co2ppm, CO2_LOW, CO2_HIGHT, 255, 0);
-  }
+  // if (_co2ppm<CO2_LOW) _greenLevel = 255;
+  // else {
+  //   if (_co2ppm>CO2_HIGHT) _greenLevel = 0;
+  //   else _greenLevel = map(_co2ppm, CO2_LOW, CO2_HIGHT, 255, 0);
+  // }
   Serial.printf("_co2ppm = %f\n",_co2ppm);
   return _co2ppm;
 }
@@ -81,7 +81,7 @@ void CO2Sensor::calibrate(){
 void CO2Sensor::init(){
   _co2_a = 1500;
   _co2ppm = co2_d;
-  //_co2_v = 0;
+  _co2_v = 0;
 }
 
 int CO2Sensor::getVoltage(){

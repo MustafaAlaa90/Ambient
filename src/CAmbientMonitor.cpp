@@ -64,8 +64,6 @@ bool CAmbientMonitor::InitAirQualityChannel()
   memset(m_AirQualitySensorChReading,0,AIR_QUALITY_READING_SIZE);
   return Ret;
 }
-//------------------------------------------------------------
-
 //-------------------------------------------------------------
 void CAmbientMonitor::COInit()
 {
@@ -90,7 +88,7 @@ void CAmbientMonitor::COInit()
       calcR0 += this->CO.calibrate(RatioCleanAIRCO);
     }
     this->CO.setR0(calcR0/float(10.0));
-    Serial.printf("RL = 100 , Final CO_R0 = %f\n",this->CO.getR0());
+    Serial.printf("Final CO_R0 = %f\n",this->CO.getR0());
 }
 //-------------------------------------------------------------
 void CAmbientMonitor::CH4Init()
@@ -116,7 +114,7 @@ void CAmbientMonitor::CH4Init()
       calcR0 += this->CH4.calibrate(RatioCleanAIRCH4);
     }
     this->CH4.setR0(calcR0/float(10.0));
-    Serial.printf("RL = 100, Final CH4_R0 = %f\n",this->CH4.getR0());
+    Serial.printf("Final CH4_R0 = %f\n",this->CH4.getR0());
 }
 //-------------------------------------------------------------
 void CAmbientMonitor::CO2Init()
@@ -313,8 +311,8 @@ void CAmbientMonitor::ReadGasSensorChannel()
   m_GasSensorChReading[Gas_Sensor_field_O3-1] =  ReadO3();
   m_GasSensorChReading[Gas_Sensor_field_power_monitor-1] =  ReadPowerPin();
   SetfieldMultiple(m_GasSensorChReading,GAS_SENSOR_READING_SIZE);
-  ThingSpeak.setLatitude(29.957441748034174);
-  ThingSpeak.setLongitude(30.912880079820305);
+  ThingSpeak.setLatitude((float)m_MovementSensorChReading[Movement_field_Latitude-1]);
+  ThingSpeak.setLongitude((float)m_MovementSensorChReading[Movement_field_Longitude-1]);
   ReadDateTime();
   WriteGasSesnorsLog();
 }
@@ -347,8 +345,8 @@ bool CAmbientMonitor::ReadAirQualityChannel()
   //   Serial.printf("Field = %f\n",m_AirQualitySensorChReading[i]);
   // }
   SetfieldMultiple(m_AirQualitySensorChReading,AIR_QUALITY_READING_SIZE);
-  ThingSpeak.setLatitude(29.957441748034174);
-  ThingSpeak.setLongitude(30.912880079820305);
+  ThingSpeak.setLatitude((float)m_MovementSensorChReading[Movement_field_Latitude-1]);
+  ThingSpeak.setLongitude((float)m_MovementSensorChReading[Movement_field_Longitude-1]);
   ReadDateTime();
   WriteAirQualityLog();
 }
@@ -806,4 +804,10 @@ void CAmbientMonitor::ReadDateTime()
   m_dateTimeRTC = ctime(&t);
   //dateTime.replace( '\n', 0);
 
+}
+//------------------------------------------------------------
+void CAmbientMonitor::CalibrateGasSensors()
+{
+  COInit();
+  CH4Init();
 }

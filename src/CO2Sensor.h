@@ -27,9 +27,9 @@ class CO2Sensor
     void init();
 
     int _analogPin;
-    int _inertia;
+    float _inertia;
     int _tries;
-    int _co2_v;
+    float _co2_v;
     int _greenLevel;
     double _co2_a;
     double _co2ppm;

@@ -1,6 +1,7 @@
 #include "CAmbientMonitor.h"
 
-CAmbientMonitor ambient;
+#define Calibrate false
+static CAmbientMonitor ambient;
 static bool connect_state = true;
 static bool start_stop_state = true;
 static int key_pessed_wifi_counter = 0;
@@ -58,6 +59,7 @@ static esp_wps_config_t config;
 
 void setup()
 {
+    delay(2000);
     Serial.begin(115200);
     Serial.println("Starting AmbienMonitor");
     //-----------------------------------------------------------------------
@@ -79,6 +81,8 @@ void setup()
    Serial.printf("Init thingspeak client ...\n");
    ambient.ThinkSpeakInit();
    //-------------------------------------------------------------------------
+   Serial.printf("Waiting 3 mintutes for Gas Sensor to heat up ....\n");
+   delay(180000);
    Serial.println("Init Gas Sensors channel .... \n");
    if(!ambient.InitGasSensorChannel())
    {
@@ -93,8 +97,6 @@ void setup()
    ambient.InitMovementChannel();
    Serial.printf("Init SD Card\n");
    ambient.InitSDcard();
-  Serial.printf("Waiting for Gas Sensor to heat up ....\n");
-  delay(2000);
   //SD.remove("/log.txt");
 }
 

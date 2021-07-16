@@ -219,6 +219,7 @@ class CAmbientMonitor
         float               ReadWIFISignal();
         void                ReadADXL(float* tap,float* tilt,float* freefall);
         void                ReadDateTime();
+        void                CalibrateGasSensors();
 
     private:
         String wpspin2string(uint8_t a[]);
