@@ -78,16 +78,17 @@ void CAmbientMonitor::COInit()
     //CO.init();
     this->CO.setRL(CO_RL);
     Serial.printf("set CO RL value %f\n",this->CO.getRL());
-    float calcR0 = 0;
-    for(int i = 1; i<=10; i ++)
-    {
-      //CO.update();
-      int16_t adc0 = this->ads.readADC_SingleEnded(CO_ADC_PIN);
-      //float volts0 = this->ads.computeVolts(adc0);
-      this->CO.setADC((float)adc0);
-      calcR0 += this->CO.calibrate(RatioCleanAIRCO);
-    }
-    this->CO.setR0(calcR0/float(10.0));
+    // float calcR0 = 0;
+    // for(int i = 1; i<=10; i ++)
+    // {
+    //   //CO.update();
+    //   int16_t adc0 = this->ads.readADC_SingleEnded(CO_ADC_PIN);
+    //   //float volts0 = this->ads.computeVolts(adc0);
+    //   this->CO.setADC((float)adc0);
+    //   calcR0 += this->CO.calibrate(RatioCleanAIRCO);
+    // }
+    // this->CO.setR0(calcR0/float(10.0));
+    this->CO.setR0(CO_R0);
     Serial.printf("Final CO_R0 = %f\n",this->CO.getR0());
 }
 //-------------------------------------------------------------
@@ -104,16 +105,18 @@ void CAmbientMonitor::CH4Init()
     // //CH4.init();
     this->CH4.setRL(CH4_RL);
     Serial.printf("set CH4 RL value %f\n",CH4.getRL());
-    float calcR0 = 0;
-    for(int i = 1; i<=10; i ++)
-    {
-      //CH4.update();
-      int16_t adc2 = this->ads.readADC_SingleEnded(CH4_ADC_PIN);
-      //float volts2 = this->ads.computeVolts(adc2);
-      this->CH4.setADC((float)adc2);
-      calcR0 += this->CH4.calibrate(RatioCleanAIRCH4);
-    }
-    this->CH4.setR0(calcR0/float(10.0));
+    
+    // float calcR0 = 0;
+    // for(int i = 1; i<=10; i ++)
+    // {
+    //   //CH4.update();
+    //   int16_t adc2 = this->ads.readADC_SingleEnded(CH4_ADC_PIN);
+    //   //float volts2 = this->ads.computeVolts(adc2);
+    //   this->CH4.setADC((float)adc2);
+    //   calcR0 += this->CH4.calibrate(RatioCleanAIRCH4);
+    // }
+    // this->CH4.setR0(calcR0/float(10.0));
+    this->CH4.setR0(CH4_R0);
     Serial.printf("Final CH4_R0 = %f\n",this->CH4.getR0());
 }
 //-------------------------------------------------------------

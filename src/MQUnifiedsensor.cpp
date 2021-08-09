@@ -1,6 +1,6 @@
 #include "MQUnifiedsensor.h"
 
-MQUnifiedsensor::MQUnifiedsensor(String Placa, float Voltage_Resolution, int ADC_Bit_Resolution, int pin, String type) {
+MQUnifiedsensor::MQUnifiedsensor(String Placa, float Voltage_Resolution, float ADC_Bit_Resolution, int pin, String type) {
   this->_pin = pin;
   Placa.toCharArray(this->_placa, 20);
   type.toCharArray(this->_type, 6);
@@ -29,7 +29,8 @@ void MQUnifiedsensor::setRL(float RL) {
 void MQUnifiedsensor::setADC(float value)
 {
 
-  this->_sensor_volt = value * _VOLT_RESOLUTION / _ADC_Bit_Resolution; 
+  this->_sensor_volt = value * _VOLT_RESOLUTION / _ADC_Bit_Resolution;
+  Serial.printf("ADC_Resultion = %f\n",this->_ADC_Bit_Resolution);
   Serial.printf("this-> _sensor_volt = %f, value = %f\n",this->_sensor_volt,value);
   this->_adc =  value;
 }

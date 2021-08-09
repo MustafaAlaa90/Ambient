@@ -27,12 +27,10 @@ CO2Sensor::CO2Sensor(int analogPin, float inertia, int tries){
 
 double CO2Sensor::read(){
   float v = 0;
-
-  analogRead(_analogPin);
   for (int i = 0; i < _tries; i++)
   {
      v += analogRead(_analogPin);
-     delay(2);
+     delay(20);
   }
   _co2_v = (1-_inertia)*(v*m_vref)/(m_samples*_tries)+_co2_v*_inertia;
 

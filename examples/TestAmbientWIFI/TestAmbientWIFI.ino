@@ -65,7 +65,7 @@ void setup()
     //-----------------------------------------------------------------------
     ambient.InitButtons();
     ambient.InitLEDs();
-    digitalWrite(WWIFI_LED,connect_state);
+    digitalWrite(WWIFI_LED,false);
     digitalWrite(Start_Stop_LED,start_stop_state);
     attachInterrupt(digitalPinToInterrupt(Connect_WIFI_Pin), isr_WIFI,  FALLING);
     attachInterrupt(digitalPinToInterrupt(Start_Stop_Reading_Pin), isr_Start_Stop, FALLING);
@@ -82,7 +82,17 @@ void setup()
    ambient.ThinkSpeakInit();
    //-------------------------------------------------------------------------
    Serial.printf("Waiting 3 mintutes for Gas Sensor to heat up ....\n");
-   delay(180000);
+   bool LED = false;
+   int i =0;
+   while (i<180)
+   {
+      digitalWrite(Start_Stop_LED,LED);
+      LED=!LED;
+      Serial.printf("waiting for gas sensors heat up\n");
+      delay(1000);
+      i++;
+   }
+   digitalWrite(Start_Stop_LED,true);
    Serial.println("Init Gas Sensors channel .... \n");
    if(!ambient.InitGasSensorChannel())
    {
@@ -97,11 +107,13 @@ void setup()
    ambient.InitMovementChannel();
    Serial.printf("Init SD Card\n");
    ambient.InitSDcard();
-  //SD.remove("/log.txt");
+  // //SD.remove("/log.txt");
 }
 
 void loop()
 {
+  // ambient.CalibrateGasSensors();
+  // delay(1000);
   if(!wifi_connected && connect_state)
   {
     Serial.printf("inside condition of connect_state = true\n");

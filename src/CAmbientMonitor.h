@@ -28,7 +28,7 @@
  /* Common Defines */
 #define BOARD               ("ESP32")
 #define Voltage_Resolution  3.3F
-#define ADC_Bit_Resolution  32768      // external adc
+#define ADC_Bit_Resolution  32768.0F      // external adc
 #define ADC_Bit_Resolution_ESP 4096  // of esp32
 #define _PPM                1
 #define PowrPIN             36
@@ -50,7 +50,7 @@
 #define COVAL_A             521853.0F
 #define COVAL_B             -3.821F 
 #define CO_RL               100.0F
-#define CO_R0               /*(87377.331250)*/ 54610.0F  // from calibration process
+#define CO_R0               /*(87377.331250)*/ 1.823227F  // from calibration process
 
 /* CH4 Defines */
 #define CH4TYPE             ("MQ-5")
@@ -59,7 +59,7 @@
 #define CH4VAL_A            177.65F
 #define CH4VAL_B            -2.56F
 #define CH4_RL              20.0F
-#define CH4_R0              504100.0F // from calibration process
+#define CH4_R0              10.744135F // from calibration process
 
 /* CO2 Defines */
 #define CO2_LOW             600.0F
@@ -68,7 +68,7 @@
 #define CO2Samples          4096
 #define CO2PIN              39
 #define INERTIA             0.99F
-#define TRIES               10           
+#define TRIES               3           
 
 /* Ozone Defines */
 #define           ADDRESS_0                 0x70           // iic slave Address
