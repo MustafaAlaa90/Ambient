@@ -41,7 +41,7 @@ class ESP32Time {
     ~ESP32Time();
 
     void begin(int stack_size = 1024, int priority = 0);
-    void set_time();
+    bool set_time();
 
   private:
     const char* time_zone;

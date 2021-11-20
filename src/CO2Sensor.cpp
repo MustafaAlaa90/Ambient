@@ -8,12 +8,10 @@ const int co2_d = 400;
 
 #define CO2_LOW 600
 #define CO2_HIGHT 1000
-//#define VREF      3300.0
-//#define Samples 4096.0
 
 CO2Sensor::CO2Sensor(int analogPin){
   _inertia = 0.99;
-  _tries = 100;
+  _tries = 3;
   _analogPin = analogPin;
   init();
 }
@@ -25,14 +23,16 @@ CO2Sensor::CO2Sensor(int analogPin, float inertia, int tries){
   init();
 }
 
-double CO2Sensor::read(){
-  float v = 0;
+int CO2Sensor::read(){
+  int v = 0;
+
+  analogRead(_analogPin);
   for (int i = 0; i < _tries; i++)
   {
      v += analogRead(_analogPin);
      delay(20);
   }
-  _co2_v = (1-_inertia)*(v*m_vref)/(m_samples*_tries)+_co2_v*_inertia;
+  _co2_v = (1-_inertia)*(v*3300.0)/(4096.0*_tries)+_co2_v*_inertia;
 
   double co2_exp = (_co2_a-_co2_v)/co2_b;
 
@@ -42,7 +42,7 @@ double CO2Sensor::read(){
   Serial.print("Exponent: ");
   Serial.println(co2_exp);
 
-  Serial.println("================ CO2 ==================== ");
+  Serial.println("CO2 == ");
 
   Serial.print(_co2_v);
   Serial.println(" mV");
@@ -50,12 +50,12 @@ double CO2Sensor::read(){
   Serial.println(" ppm");
   #endif
 
-  // if (_co2ppm<CO2_LOW) _greenLevel = 255;
-  // else {
-  //   if (_co2ppm>CO2_HIGHT) _greenLevel = 0;
-  //   else _greenLevel = map(_co2ppm, CO2_LOW, CO2_HIGHT, 255, 0);
-  // }
-  Serial.printf("_co2ppm = %f\n",_co2ppm);
+  if (_co2ppm<CO2_LOW) _greenLevel = 255;
+  else {
+    if (_co2ppm>CO2_HIGHT) _greenLevel = 0;
+    else _greenLevel = map(_co2ppm, CO2_LOW, CO2_HIGHT, 255, 0);
+  }
+
   return _co2ppm;
 }
 
@@ -79,7 +79,6 @@ void CO2Sensor::calibrate(){
 void CO2Sensor::init(){
   _co2_a = 1500;
   _co2ppm = co2_d;
-  _co2_v = 0;
 }
 
 int CO2Sensor::getVoltage(){
@@ -92,14 +91,4 @@ int CO2Sensor::getGreenLevel(){
 
 int CO2Sensor::getRedLevel(){
   return 255-_greenLevel;
-}
-//-------------------------------------
-void CO2Sensor::SetVREF(float vref)
-{
-  m_vref = vref;
-}
-//-------------------------------------
-void CO2Sensor::SetSamples(int samples)
-{
-  m_samples = samples;
 }

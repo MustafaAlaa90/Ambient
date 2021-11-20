@@ -75,8 +75,7 @@ void setup()
     WiFi.onEvent(WiFiEvent);
     WiFi.mode(WIFI_MODE_STA);
     wpsInitConfig();
-    esp_wifi_wps_enable(&config);
-    esp_wifi_wps_start(0);
+    //esp_wifi_wps_start(0);
    //-------------------------------------------------------------------------
    Serial.printf("Init thingspeak client ...\n");
    ambient.ThinkSpeakInit();
@@ -117,18 +116,40 @@ void loop()
   if(!wifi_connected && connect_state)
   {
     Serial.printf("inside condition of connect_state = true\n");
-    esp_wifi_wps_enable(&config);
-    esp_wifi_wps_start(0);
+    WiFi.begin();
+    int interval = 0;
     bool led=false;
-    while(WiFi.status() != WL_CONNECTED)
+    while(WiFi.status() != WL_CONNECTED && interval < 100)
     {
       digitalWrite(WWIFI_LED,led);
       led=!led;
-      Serial.printf("waiting for connection\n");
-      delay(250);
+      Serial.printf("waiting for connection through last AP\n");
+      delay(100);
+      interval++;
     }
-    wifi_connected = true;
-    digitalWrite(WWIFI_LED,HIGH);
+    if( WiFi.status() != WL_CONNECTED )
+    {
+      //Serial.println("Init WPS ...");
+      //WiFi.disconnect();
+      WiFi.disconnect(false,true);
+      esp_wifi_wps_enable(&config);
+      esp_wifi_wps_start(0);
+      //bool led=false;
+      while(WiFi.status() != WL_CONNECTED)
+      {
+        digitalWrite(WWIFI_LED,led);
+        led=!led;
+        Serial.printf("waiting for connection throgh WPS\n");
+        delay(250);
+      }
+      wifi_connected = true;
+      digitalWrite(WWIFI_LED,HIGH);
+    }
+    else
+    {
+      wifi_connected = true;
+      digitalWrite(WWIFI_LED,HIGH);
+    }
   }
   else if(wifi_connected && !connect_state)
   {
@@ -153,7 +174,7 @@ void loop()
   //-----------------------------------------
   if(start_stop_state)
   {
-    ESP32Time.set_time();
+    ESP32Time.set_time() ? ambient.setNTPTime(true) : ambient.setNTPTime(false); 
     Serial.printf("Reading Gas Sensors values ... \n");
     ambient.ReadGasSensorChannel();
     Serial.printf("Write Gas Sensors values to ThingSpeak\n");

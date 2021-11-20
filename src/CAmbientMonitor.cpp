@@ -122,9 +122,9 @@ void CAmbientMonitor::CH4Init()
 //-------------------------------------------------------------
 void CAmbientMonitor::CO2Init()
 {
-    Serial.printf("Setting co2 samples = %d, Vref = %f\n",CO2Samples,CO2VREF);
-    CO2.SetVREF(CO2VREF);
-    CO2.SetSamples(CO2Samples);
+    //Serial.printf("Setting co2 samples = %d, Vref = %f\n",CO2Samples,CO2VREF);
+    //CO2.SetVREF(CO2VREF);
+    //CO2.SetSamples(CO2Samples);
     Serial.printf("Caliberating Co2 sensor ... \n");
     CO2.calibrate();
 }
@@ -309,7 +309,7 @@ bool CAmbientMonitor::WriteMovementChannel()
 void CAmbientMonitor::ReadGasSensorChannel()
 {
   m_GasSensorChReading[Gas_Sensor_field_CO-1] =  ReadCOPPM();
-  m_GasSensorChReading[Gas_Sensor_field_CO2-1] = (float) ReadCO2PPM();
+  m_GasSensorChReading[Gas_Sensor_field_CO2-1] = ReadCO2PPM();
   m_GasSensorChReading[Gas_Sensor_field_CH4-1] = ReadCH4PPM() /*+ float(200.0)*/;
   m_GasSensorChReading[Gas_Sensor_field_O3-1] =  ReadO3();
   m_GasSensorChReading[Gas_Sensor_field_power_monitor-1] =  ReadPowerPin();
@@ -416,11 +416,11 @@ float CAmbientMonitor::ReadCH4PPM()
     return ch4;
 }
 //-----------------------------------------------------------
-double CAmbientMonitor::ReadCO2PPM()
+int CAmbientMonitor::ReadCO2PPM()
 {
     Serial.printf("Read CO2 PPM ... \n");
-    double co2 = CO2.read();
-    Serial.printf("CO2 PPM = %f\n",co2);
+    float co2 = CO2.read();
+    Serial.printf("CO2 PPM = %d\n",co2);
     return co2;
 }
 //-----------------------------------------------------------
@@ -590,7 +590,7 @@ bool CAmbientMonitor::ConnectWIFI(const char* ssid, const char* pass )
 }
 bool CAmbientMonitor::DisconnectConnectWIFI()
 {
-  return WiFi.disconnect(false,true);
+  return WiFi.disconnect(true);
 }
 //------------------------------------------------------------------
 bool CAmbientMonitor::IsWiFiConnected()
@@ -665,7 +665,10 @@ bool CAmbientMonitor::ReadFromSDCard(fs::FS &fs, const char * path)
 }
 void CAmbientMonitor::WriteGasSesnorsLog()
 {
-  String log =  /*m_date + "|" + m_time + "|"*/ m_dateTimeRTC
+  String dateTime;
+  dateTime = m_NTPtime ?  m_dateTimeRTC : (m_date+ " | "+m_time+" | ");
+  Serial.printf("date and time %s\n");
+  String log =  dateTime
   + "CO:"+String(m_GasSensorChReading[Gas_Sensor_field_CO-1],4)
   + " | CO2:"+String(m_GasSensorChReading[Gas_Sensor_field_CO2-1],4)
   + " | CH4:"+String(m_GasSensorChReading[Gas_Sensor_field_CH4-1],4)
@@ -675,12 +678,16 @@ void CAmbientMonitor::WriteGasSesnorsLog()
   + " | SO2:"+String(m_GasSensorChReading[Gas_Sensor_field_SO2-1],4)
   + " | PWR:"+String(m_GasSensorChReading[Gas_Sensor_field_power_monitor-1],4)
   +"\n";
+  Serial.printf("log = %s\n",log.c_str());
   WriteToSDCard(SD, "/log.txt", log.c_str());
 }
 //-------------------------------------------------------------------------
 void CAmbientMonitor::WriteAirQualityLog()
 {
-  String log = /*m_date + "|" + m_time + "|"*/ m_dateTimeRTC
+  String dateTime;
+  dateTime = m_NTPtime ?  m_dateTimeRTC : (m_date+ " | "+m_time+" | ");
+  Serial.printf("date and time %s\n") ;
+  String log =  /*m_date + "|" + m_time + "|"*/ dateTime
   + "PM1:"+String(m_AirQualitySensorChReading[Air_Quality_field_PM1-1],4)
   + " | PM25:"+String(m_AirQualitySensorChReading[Air_Quality_field_PM25-1],4)
   + " | PM4:"+String(m_AirQualitySensorChReading[Air_Quality_field_PM4-1],4)
@@ -690,12 +697,16 @@ void CAmbientMonitor::WriteAirQualityLog()
   + " | HUMIDITY:"+String(m_AirQualitySensorChReading[Air_Quality_field_HUMIDITY-1],4)
   + " | TVOC:"+String(m_AirQualitySensorChReading[Air_Quality_field_TVOC-1],4)
   +"\n";
+  Serial.printf("log = %s\n",log.c_str());
   WriteToSDCard(SD, "/log.txt", log.c_str());
 }
 //-------------------------------------------------------------------------------
 void CAmbientMonitor::WriteMovementLog()
 {
-  String log =  /*m_date + "|" + m_time + "|"*/ m_dateTimeRTC
+  String dateTime;
+  dateTime = m_NTPtime ?  m_dateTimeRTC : (m_date+ " | "+m_time+" | ");
+  Serial.printf("date and time %s\n") ;
+  String log =  /*m_date + "|" + m_time + "|"*/ dateTime
   + "LAT:"+String(m_MovementSensorChReading[Movement_field_Longitude-1],4)
   + " | LNG:"+String(m_MovementSensorChReading[Movement_field_Latitude-1],4)
   + " | ALT:"+String(m_MovementSensorChReading[Movement_field_Altitude-1],4)
@@ -705,6 +716,7 @@ void CAmbientMonitor::WriteMovementLog()
   + " | SOUNDLEVEL:"+String(m_MovementSensorChReading[Movement_field_Sound_Level-1],4)
   + " | WIFI SIG:"+String(m_MovementSensorChReading[Movement_field_wifi_signal-1],4)
   +"\n";
+  Serial.printf("log = %s\n",log.c_str());
   WriteToSDCard(SD, "/log.txt", log.c_str());
 }
 //----------------------------------------------------------------------------------------
@@ -813,4 +825,9 @@ void CAmbientMonitor::CalibrateGasSensors()
 {
   COInit();
   CH4Init();
+}
+//-------------------------------------------------------------
+void CAmbientMonitor::setNTPTime(bool val)
+{
+  m_NTPtime = val;
 }

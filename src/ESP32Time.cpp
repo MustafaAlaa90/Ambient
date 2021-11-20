@@ -52,11 +52,11 @@ void ESP32Time::begin(int stack_size, int priority) {
   /*if (WiFi.status() == WL_CONNECTED)*/ set_time();
 }
 
-void ESP32Time::set_time() {
+bool ESP32Time::set_time() {
   struct timeval tv;
   if (!getNtpTime(&tv)) {
     Serial.printf("NTP Failed:(\n");
-    return;
+    return false;
   }
   struct timezone tz;
   setenv("TZ", time_zone, 1);
@@ -65,6 +65,7 @@ void ESP32Time::set_time() {
   tz.tz_dsttime = 0;
   settimeofday(&tv, &tz);
   time_t t = time(NULL);
+  return true;
   //Serial.printf("ctime: %s\n", ctime(&t));
 }
 

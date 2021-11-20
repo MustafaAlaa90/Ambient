@@ -67,7 +67,7 @@
 #define CO2VREF             3300.0F
 #define CO2Samples          4096
 #define CO2PIN              39
-#define INERTIA             0.99F
+#define INERTIA             0.99
 #define TRIES               3           
 
 /* Ozone Defines */
@@ -208,7 +208,7 @@ class CAmbientMonitor
         
         float               ReadCOPPM();
         float               ReadCH4PPM();
-        double              ReadCO2PPM();
+        int                 ReadCO2PPM();
         float               ReadO3();
         float               ReadSoundLevel();
         void                ReadGPSInfo(double* lat,double* lng,double* meters);
@@ -220,6 +220,8 @@ class CAmbientMonitor
         void                ReadADXL(float* tap,float* tilt,float* freefall);
         void                ReadDateTime();
         void                CalibrateGasSensors();
+        
+        void                setNTPTime(bool val);
 
     private:
         String wpspin2string(uint8_t a[]);
@@ -241,6 +243,7 @@ class CAmbientMonitor
         String              m_time;
         String              m_dateTimeRTC;
         uint32_t            m_size;
+        bool                m_NTPtime;
         //ESP32Time           esptime;
 
 
