@@ -119,12 +119,12 @@ void loop()
     WiFi.begin();
     int interval = 0;
     bool led=false;
-    while(WiFi.status() != WL_CONNECTED && interval < 100)
+    while(WiFi.status() != WL_CONNECTED && interval < 300) // timeout of 1.5 mins to connect to last AP
     {
       digitalWrite(WWIFI_LED,led);
       led=!led;
       Serial.printf("waiting for connection through last AP\n");
-      delay(100);
+      delay(300);
       interval++;
     }
     if( WiFi.status() != WL_CONNECTED )
@@ -193,9 +193,6 @@ void loop()
     ambient.WriteMovementChannel();
     Serial.printf("Waiting 15 sec interval\n");
     delay(15000);
-    //Serial.printf("Writing to SD Card\n");
-    //ambient.WriteLog();
-    //ambient.ReadFromSDCard(SD, "/log.txt");
   }
 }
 //---------------------------------------------------------------------------
