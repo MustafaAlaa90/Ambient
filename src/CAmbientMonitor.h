@@ -22,6 +22,7 @@
 #include "ADXL345.h"
 #include "ESP32Time.h"
 #include "algorithm"
+#include "ULP.h"
 
 
 
@@ -88,6 +89,10 @@
 #define           OCOUNT                    100            // Ozone Count Value
 #define           COLLECT_NUMBER            20              // collect number, the collection range is 1-100
 #define           Ozone_IICAddress          ADDRESS_3
+
+/* SO2 Sensor defines */
+#define        SO2_ADC_PIN    3          // channel number of ads driver 
+#define        SF             0.005      // snesitivity code 
 
 /* Sound Level Defines */
 #define           SOUND_LEVEL_PIN           34
@@ -195,6 +200,7 @@ class CAmbientMonitor
         void                CH4Init();
         void                CO2Init();
         bool                O3Init();
+        void                SO2Init();
         void                GPSInit();
         bool                BMEInit();
         void                DHTInit();
@@ -210,6 +216,7 @@ class CAmbientMonitor
         float               ReadCH4PPM();
         int                 ReadCO2PPM();
         float               ReadO3();
+        float               ReadSO2();
         float               ReadSoundLevel();
         void                ReadGPSInfo(double* lat,double* lng,double* meters);
         bool                ReadBME(float* pressure,float* voc);
@@ -229,6 +236,7 @@ class CAmbientMonitor
         MQUnifiedsensor     CH4;
         CO2Sensor           CO2;
         DFRobot_OzoneSensor O3;
+        SO2                 so2;
         CUblox              GPS;    // UART2
         Adafruit_BME680     bme;    // I2C
         SPS30               sps30;  // UART1

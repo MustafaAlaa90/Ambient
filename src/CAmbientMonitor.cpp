@@ -4,6 +4,7 @@ CAmbientMonitor::CAmbientMonitor():
  CO(BOARD,Voltage_Resolution,ADC_Bit_Resolution,CO_ADC_PIN,COTYPE)
 ,CH4(BOARD,Voltage_Resolution,ADC_Bit_Resolution,CH4_ADC_PIN,CH4TYPE)
 ,CO2(CO2PIN,INERTIA,TRIES)
+,so2(SO2_ADC_PIN,0,SF)
 ,GPS(UBlox_UART)
 ,DHT(DHTPIN, DHTTYPE)
 {
@@ -154,6 +155,13 @@ bool CAmbientMonitor::O3Init()
       Serial.printf("Failed to begin Ozone I2C bus on address %X\n",Ozone_IICAddress);
     }
     return Ret;
+}
+//------------------------------------------------------------------
+void CAmbientMonitor::SO2Init()
+{
+  so2.pVcc = 3.3;  //analogRead Reference Voltage, maybe measure Aref??
+  so2.pVsup = 3.3;  //voltage supplied to V+ of ULP, default is 3.3 Volts, probably should measure this as well.
+  so2.pVref_set = 1.655 * 1000.0 ; // vref meaured from vref pin of the sensor in mv
 }
 //------------------------------------------------------------
 void CAmbientMonitor::GPSInit()
@@ -312,6 +320,7 @@ void CAmbientMonitor::ReadGasSensorChannel()
   m_GasSensorChReading[Gas_Sensor_field_CO2-1] = ReadCO2PPM();
   m_GasSensorChReading[Gas_Sensor_field_CH4-1] = ReadCH4PPM() /*+ float(200.0)*/;
   m_GasSensorChReading[Gas_Sensor_field_O3-1] =  ReadO3();
+  m_GasSensorChReading[Gas_Sensor_field_SO2-1] = ReadSO2();
   m_GasSensorChReading[Gas_Sensor_field_power_monitor-1] =  ReadPowerPin();
   SetfieldMultiple(m_GasSensorChReading,GAS_SENSOR_READING_SIZE);
   ThingSpeak.setLatitude((float)m_MovementSensorChReading[Movement_field_Latitude-1]);
@@ -431,6 +440,24 @@ float CAmbientMonitor::ReadO3()
     Serial.printf("O3 PPB = %d\n",o3);
     Serial.printf("O3 PPM = %f\n",o3/1000.0);
     return o3/1000.0;
+}
+//------------------------------------------------------------
+float CAmbientMonitor::ReadSO2()
+{
+  Serial.printf("pIzero =%f \n",so2.pIzero);
+  Serial.printf("pTzero =%f \n",so2.pTzero);
+  Serial.printf("Begin ADC Driver ...\n");
+  ads.begin(); // begin externa adc
+  Serial.printf("Read SO2 from ADC Driver\n");
+  int16_t adc3 = ads.readADC_SingleEnded(SO2_ADC_PIN);
+  so2.setADCSamples(adc3);
+  so2.getIgas(1);
+  so2.getConc(so2.pT);
+  Serial.printf("so2.pVgas = %f\n",so2.pVgas);
+  Serial.printf("so2.pInA = %f\n",so2.pInA);
+  Serial.printf("so2.pX = %f\n",so2.pX);
+  return so2.pX;
+
 }
 //-----------------------------------------------------------
 float CAmbientMonitor::ReadSoundLevel()
