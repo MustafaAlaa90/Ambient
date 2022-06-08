@@ -92,7 +92,7 @@
 
 /* SO2 Sensor defines */
 #define        SO2_ADC_PIN    3          // channel number of ads driver 
-#define        SF             0.005      // snesitivity code 
+#define        SF             29.33F      // snesitivity code 
 
 /* Sound Level Defines */
 #define           SOUND_LEVEL_PIN           34

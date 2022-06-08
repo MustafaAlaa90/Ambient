@@ -446,6 +446,7 @@ float CAmbientMonitor::ReadSO2()
 {
   Serial.printf("pIzero =%f \n",so2.pIzero);
   Serial.printf("pTzero =%f \n",so2.pTzero);
+  Serial.printf("sensitivity code =%f \n",so2.pSf);
   Serial.printf("Begin ADC Driver ...\n");
   ads.begin(); // begin externa adc
   Serial.printf("Read SO2 from ADC Driver\n");
