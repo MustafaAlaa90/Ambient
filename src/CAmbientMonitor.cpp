@@ -448,6 +448,7 @@ float CAmbientMonitor::ReadSO2()
   Serial.printf("pTzero =%f \n",so2.pTzero);
   Serial.printf("sensitivity code =%f \n",so2.pSf);
   Serial.printf("Begin ADC Driver ...\n");
+  so2.zero(); //Uses last values read of Izero and Tzero
   ads.begin(); // begin externa adc
   Serial.printf("Read SO2 from ADC Driver\n");
   int16_t adc3 = ads.readADC_SingleEnded(SO2_ADC_PIN);
@@ -460,7 +461,7 @@ float CAmbientMonitor::ReadSO2()
   Serial.printf("so2.pInA = %f\n",so2.pInA);
   Serial.printf("so2.pT = %f\n",so2.pT);
   Serial.printf("so2.pX = %f\n",so2.pX);
-  return so2.pX;
+  return so2.pX/1000.0;  // convert ppb to ppm
 
 }
 //-----------------------------------------------------------
