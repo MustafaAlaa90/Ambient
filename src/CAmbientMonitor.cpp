@@ -451,11 +451,14 @@ float CAmbientMonitor::ReadSO2()
   ads.begin(); // begin externa adc
   Serial.printf("Read SO2 from ADC Driver\n");
   int16_t adc3 = ads.readADC_SingleEnded(SO2_ADC_PIN);
+  Serial.printf("SO2 samples = %f\n",(float)adc3);
   so2.setADCSamples(adc3);
   so2.getIgas(1);
+  so2.getTemp(1);
   so2.getConc(so2.pT);
   Serial.printf("so2.pVgas = %f\n",so2.pVgas);
   Serial.printf("so2.pInA = %f\n",so2.pInA);
+  Serial.printf("so2.pT = %f\n",so2.pT);
   Serial.printf("so2.pX = %f\n",so2.pX);
   return so2.pX;
 
