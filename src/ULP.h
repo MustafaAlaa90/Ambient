@@ -100,7 +100,7 @@ class IAQ: public ULP {
 
 class SO2: public ULP {
   public:
-    SO2(int a, int b, float c = 14.6);
+    SO2(int a, int b, float c = 29.33);
 };
 
 class NO2: public ULP {
