@@ -23,8 +23,8 @@ ULP::ULP(int a, int b, float c) : pCPin(a), pTPin(b), pSf(c)
   pLvolt = (pLtemp + pTb) * pVsup / pTs; // volts for cal of temp sensor
 }
 
- float ULP::pVcc = 3.0;
- float ULP::pVsup = 3.3;
+ //float ULP::pVcc = 3.0;
+ //float ULP::pVsup = 3.3;
 
 void ULP::getTemp(int n)
 {
