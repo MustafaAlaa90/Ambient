@@ -458,7 +458,7 @@ float CAmbientMonitor::ReadSO2()
   so2.setADCSamples(adc3);
   so2.getIgas(1);
   so2.getTemp(1);
-  //so2.getConc(m_AirQualitySensorChReading[Air_Quality_field_TEMP-1]);
+  so2.getConc(so2.pT);
   Serial.printf("so2.pVgas = %f\n",so2.pVgas);
   Serial.printf("so2.pInA = %f\n",so2.pInA);
   Serial.printf("temp = %f\n",m_AirQualitySensorChReading[Air_Quality_field_TEMP-1]);
