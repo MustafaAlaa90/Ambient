@@ -64,7 +64,7 @@ class ULP {
 
     bool OCzero(int n = 10);                        //Measure differential of open circuit voltage, used for precise ADC measurments
 
-    void getIgas(int n);                 //ADC of sensor voltage, converted to current
+    void getIgas(float pvrev);                 //ADC of sensor voltage, converted to current
 
     void setXSpan();                     //not recomended for use, simple calibration of gas concentration, input is expected gas concentration
 

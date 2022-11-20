@@ -147,7 +147,7 @@ void ULP::zero()
   pTzero = pT;
 }
 
-void ULP::getIgas(int n)
+void ULP::getIgas(float pvrev)
 {
   // unsigned long etime, i = 0;
   // unsigned long anaCounts = 0;
@@ -159,9 +159,9 @@ void ULP::getIgas(int n)
   // } while (millis() < etime);
   // float Cnts = float (anaCounts) / float(i);
 
-  Serial.printf("pVref_set = %f\n",pVref_set);
+  Serial.printf("pVref_set = %f\n",pvrev);
   pVgas = adcSamples * pVcc * 1000.0 / 32768.0F; // in mV
-  pInA = (pVgas - pVref_set) / pGain * 1000.0;   // in nA
+  pInA = (pVgas - pvrev) / pGain * 1000.0;   // in nA
 }
 
 void ULP::getConc(float t)
