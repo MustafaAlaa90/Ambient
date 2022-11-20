@@ -162,7 +162,8 @@ void CAmbientMonitor::SO2Init()
   so2.pVcc = 3.3;  //analogRead Reference Voltage, maybe measure Aref??
   so2.pVsup = 3.3;  //voltage supplied to V+ of ULP, default is 3.3 Volts, probably should measure this as well.
   so2.pVref_set = 1.655 * 1000.0 ; // vref meaured from vref pin of the sensor in mv
-  so2.setTSpan(0, "LOW"); // configure temprature coofficient for low temprature betweeen 0 - 20 C degree
+  so2.setTSpan(0.1, "LOW"); // configure temprature coofficient for low temprature betweeen 0 - 20 C degree
+  so2.setTSpan(25, "HIGH");
 }
 //------------------------------------------------------------
 void CAmbientMonitor::GPSInit()
@@ -449,7 +450,7 @@ float CAmbientMonitor::ReadSO2()
   Serial.printf("pTzero =%f \n",so2.pTzero);
   Serial.printf("sensitivity code =%f \n",so2.pSf);
   Serial.printf("Begin ADC Driver ...\n");
-  so2.zero(); //Uses last values read of Izero and Tzero
+  //so2.zero(); //Uses last values read of Izero and Tzero
   ads.begin(); // begin externa adc
   Serial.printf("Read SO2 from ADC Driver\n");
   int16_t adc3 = ads.readADC_SingleEnded(SO2_ADC_PIN);

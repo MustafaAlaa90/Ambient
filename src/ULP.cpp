@@ -16,7 +16,7 @@ ULP::ULP(int a, int b, float c) : pCPin(a), pTPin(b), pSf(c)
 
   // Temperature Sensor Settings
   pHtemp = 20.0;
-  pLtemp = 0;                            // temps for cal of temp sensor
+  pLtemp = 0.1;                            // temps for cal of temp sensor
   pTb = 18.0;                            // temperature sensor coef
   pTs = 87.0;                            // temperature sensor coef
   pHvolt = (pHtemp + pTb) * pVsup / pTs; // volts for cal of temp sensor
@@ -158,6 +158,7 @@ void ULP::getIgas(int n)
   // } while (millis() < etime);
   // float Cnts = float (anaCounts) / float(i);
 
+  Serial.printf("pVref_set = %f\n",pVref_set);
   pVgas = adcSamples * pVcc * 1000.0 / 32768.0F; // in mV
   pInA = (pVgas - pVref_set) / pGain * 1000.0;   // in nA
 }
