@@ -461,11 +461,11 @@ float CAmbientMonitor::ReadSO2()
   so2.setADCSamples((float)adc3);
   so2.getIgas(1.655 * 1000.0);
   so2.getTemp(1);
-  so2.getConc(so2.pT);
   Serial.printf("so2.pVgas = %f\n",so2.pVgas);
   Serial.printf("so2.pInA = %f\n",so2.pInA);
   Serial.printf("pT = %f\n",so2.pT);
   Serial.printf("so2.pX = %f\n",so2.pX/1000.0);
+  so2.getConc(so2.pT);
   //if(zeroCount<1)
   //{
     so2.zero(); //Uses last values read of Izero and Tzero

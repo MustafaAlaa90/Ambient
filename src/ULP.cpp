@@ -40,8 +40,9 @@ void ULP::getTemp(int n)
   // float Volts = Cnts * pVcc / 1024.0;
 
   float Volts = 1.743; //  value of vtemp from Bamatraf
-
+  Serial.printf("New temp. span = %f and offset = %f\n",pTs,pTb);
   pT = (pTs / pVsup) * Volts - pTb;
+  Serial.printf("calculated pT = \n",pT);
   
 }
 
