@@ -83,14 +83,14 @@ void setup()
    Serial.printf("Waiting 3 mintutes for Gas Sensor to heat up ....\n");
    bool LED = false;
    int i =0;
-   while (i<180)
-   {
-      digitalWrite(Start_Stop_LED,LED);
-      LED=!LED;
-      Serial.printf("waiting for gas sensors heat up\n");
-      delay(1000);
-      i++;
-   }
+  //  while (i<180)
+  //  {
+  //     digitalWrite(Start_Stop_LED,LED);
+  //     LED=!LED;
+  //     Serial.printf("waiting for gas sensors heat up\n");
+  //     delay(1000);
+  //     i++;
+  //  }
    digitalWrite(Start_Stop_LED,true);
    Serial.println("Init Gas Sensors channel .... \n");
    if(!ambient.InitGasSensorChannel())
