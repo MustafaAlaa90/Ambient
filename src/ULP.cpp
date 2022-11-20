@@ -166,8 +166,8 @@ void ULP::getIgas(float pvrev)
 
 void ULP::getConc(float t)
 {
-  float nA = pInA - pIzero * expI(t - pTzero);
-  float Sens = pSf * (1.0 + pTc * (t - 20.0));
+  float nA = pInA /*- pIzero * expI(t - pTzero)*/;
+  float Sens = pSf /** (1.0 + pTc * (t - 20.0))*/;
   Serial.printf("nA = %f, Sens = %f\n",nA,Sens);
   pX = nA / Sens * 1000.0; // output in ppb
 }
