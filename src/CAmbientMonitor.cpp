@@ -40,6 +40,8 @@ bool CAmbientMonitor::InitGasSensorChannel()
   Ret = O3Init();
   Serial.printf("initialize CH4 ...\n");
   CH4Init();
+  Serial.printf("initalize SO2 ... \n");
+  SO2Init();
   InitADXL();
   memset(m_GasSensorChReading,0,GAS_SENSOR_READING_SIZE);
   return Ret;
