@@ -456,11 +456,11 @@ float CAmbientMonitor::ReadSO2()
   Serial.printf("SO2 samples = %f\n",(float)adc3);
   so2.setADCSamples(adc3);
   so2.getIgas(1);
-  so2.getTemp(1);
-  so2.getConc(so2.pT);
+  //so2.getTemp(1);
+  so2.getConc(m_AirQualitySensorChReading[Air_Quality_field_TEMP-1]);
   Serial.printf("so2.pVgas = %f\n",so2.pVgas);
   Serial.printf("so2.pInA = %f\n",so2.pInA);
-  Serial.printf("so2.pT = %f\n",so2.pT);
+  Serial.printf("temp = %f\n",m_AirQualitySensorChReading[Air_Quality_field_TEMP-1]);
   Serial.printf("so2.pX = %f\n",so2.pX/1000.0);
   return so2.pX/1000.0;  // convert ppb to ppm
 
