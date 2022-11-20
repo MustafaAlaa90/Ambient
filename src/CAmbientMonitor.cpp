@@ -165,7 +165,7 @@ void CAmbientMonitor::SO2Init()
   so2.pVsup = 3.3;  //voltage supplied to V+ of ULP, default is 3.3 Volts, probably should measure this as well.
   //so2.pVref_set = 1.655 * 1000.0 ; // vref meaured from vref pin of the sensor in mv
   so2.setTSpan(0.1, "LOW"); // configure temprature coofficient for low temprature betweeen 0 - 20 C degree
-  so2.setTSpan(25, "HIGH");
+  //so2.setTSpan(25, "HIGH");
 }
 //------------------------------------------------------------
 void CAmbientMonitor::GPSInit()
