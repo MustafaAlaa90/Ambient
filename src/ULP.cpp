@@ -160,7 +160,7 @@ void ULP::getIgas(float pvrev)
   // float Cnts = float (anaCounts) / float(i);
 
   Serial.printf("pVref_set = %f\n",pvrev);
-  pVgas = adcSamples * pVcc * 1000.0 / 32768.0F; // in mV
+  pVgas = adcSamples * pVcc * 1000.0 / 32768.0; // in mV
   pInA = (pVgas - pvrev) / pGain * 1000.0;   // in nA
 }
 
@@ -201,7 +201,7 @@ void ULP::setXSpan()
   }
 }
 
-void ULP::setADCSamples(int16_t value)
+void ULP::setADCSamples(float value)
 {
   adcSamples = value;
 }

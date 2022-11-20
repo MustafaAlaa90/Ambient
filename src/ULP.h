@@ -44,7 +44,7 @@ class ULP {
 
     float pGain;     //gain of trans impedance amplifier (TIA)
 
-    int16_t adcSamples;
+    float adcSamples;
 
     ULP (int a, int b, float c);
 
