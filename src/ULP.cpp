@@ -240,10 +240,10 @@ IAQ::IAQ(int a, int b, float c) : ULP(a, b, c = 150.0)
 
 SO2::SO2(int a, int b, float c) : ULP(a, b, c = 29.33)
 {
-  setVref(+200, 143000);
+  //setVref(+200, 143000);
   pGain = 100.0;
   pn = 10.26;
-  pTc = -0.33 /*-0.026*/;
+  pTc = /*-0.33*/ -0.026;
 }
 
 NO2::NO2(int a, int b, float c) : ULP(a, b, c = -25.0)
