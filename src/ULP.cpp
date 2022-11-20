@@ -42,6 +42,7 @@ void ULP::getTemp(int n)
   float Volts = 1.743; //  value of vtemp from Bamatraf
 
   pT = (pTs / pVsup) * Volts - pTb;
+  
 }
 
 float ULP::convertT(char U)
