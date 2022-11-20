@@ -70,7 +70,7 @@ class ULP {
 
     void setTSpan(float t, String R);     //simple calibration of temperature sensor
 
-    void setADCSamples(int16_t value);
+    void setADCSamples(float value);
 
     
 };
