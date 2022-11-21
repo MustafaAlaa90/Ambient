@@ -16,7 +16,7 @@ ULP::ULP(int a, int b, float c) : pCPin(a), pTPin(b), pSf(c)
 
   // Temperature Sensor Settings
   pHtemp = 20.0;
-  pLtemp = 0.1;                            // temps for cal of temp sensor
+  pLtemp = 0.0;                            // temps for cal of temp sensor
   pTb = 18.0;                            // temperature sensor coef
   pTs = 87.0;                            // temperature sensor coef
   pHvolt = (pHtemp + pTb) * pVsup / pTs; // volts for cal of temp sensor
@@ -39,9 +39,10 @@ void ULP::getTemp(int n)
   // float Cnts = float (anaCounts) / float(i);
   // float Volts = Cnts * pVcc / 1024.0;
 
-  float Volts = 1.743; //  value of vtemp from Bamatraf
-  Serial.printf("New temp. span = %f and offset = %f\n",pTs,pTb);
-  pT = (pTs / pVsup) * Volts - pTb;
+  //float Volts = 1.743; //  value of vtemp from Bamatraf
+  Serial.printf("vtemp = %f\n",vtemp);
+  Serial.printf("temp. span = %f and offset = %f\n",pTs,pTb);
+  pT = (pTs / pVsup) * vtemp - pTb;
   Serial.printf("calculated pT = %f\n",pT);
   
 }
@@ -160,16 +161,16 @@ void ULP::getIgas(float pvrev)
   // } while (millis() < etime);
   // float Cnts = float (anaCounts) / float(i);
 
-  Serial.printf("pVref_set = %f\n",pvrev);
+  Serial.printf("pVref = %f\n",pvrev);
   pVgas = adcSamples * pVcc * 1000.0 / 32768.0; // in mV
-  pInA = abs(pVgas - pvrev) / pGain * 1000.0;   // in nA
+  pInA = (pVgas - pvrev) / pGain * 1000.0;   // in nA
 }
 
 void ULP::getConc(float t)
 {
   Serial.printf("pT inside getConc= %f\n",pT);
-  float nA = pInA /*- pIzero * expI(pT - pTzero)*/;
-  float Sens = pSf /** (1.0 + pTc * (t - 20.0))*/;
+  float nA = pInA - /*pIzero * expI(pT - pTzero)*/;
+  float Sens = pSf * /*(1.0 + pTc * (t - 20.0))*/;
   Serial.printf("nA = %f, Sens = %f\n",nA,Sens);
   pX = nA / Sens * 1000.0; // output in ppb
 }
@@ -246,14 +247,16 @@ SO2::SO2(int a, int b, float c) : ULP(a, b, c = 29.33)
   pGain = 100.0;
   pn = 10.26;
   pTc = /*-0.33*/ -0.026;
+  vtemp = 1.743F;
 }
 
-NO2::NO2(int a, int b, float c) : ULP(a, b, c = -25.0)
+NO2::NO2(int a, int b, float c) : ULP(a, b, c = -22.09)
 {
-  setVref(-25, 16200);
+  //setVref(-25, 16200);
   pGain = 499.0;
   pn = 109.6;
   pTc = 0.005;
+  vtemp = 1.725F;
 }
 
 RESP::RESP(int a, int b, float c) : ULP(a, b, c = -21.5)

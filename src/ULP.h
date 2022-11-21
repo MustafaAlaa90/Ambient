@@ -46,6 +46,8 @@ class ULP {
 
     float adcSamples;
 
+    float vtemp;
+
     ULP (int a, int b, float c);
 
     float convertT(char U = 'C');               //output T in F or C
@@ -107,7 +109,7 @@ class SO2: public ULP {
 
 class NO2: public ULP {
   public:
-    NO2(int a, int b, float c = -25.0);
+    NO2(int a, int b, float c = -22.09);
 };
 
 class RESP: public ULP {

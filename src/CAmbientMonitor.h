@@ -92,7 +92,12 @@
 
 /* SO2 Sensor defines */
 #define        SO2_ADC_PIN    3          // channel number of ads driver 
-#define        SF             29.33F      // snesitivity code 
+#define        SO2SF             29.33F      // snesitivity code 
+
+/* NO2 Sensor defines */
+#define        NO2_ADC_PIN    1         // channel number of ads driver 
+#define        NO2SF          -22.09F      // snesitivity code 
+
 
 /* Sound Level Defines */
 #define           SOUND_LEVEL_PIN           34
@@ -201,6 +206,7 @@ class CAmbientMonitor
         void                CO2Init();
         bool                O3Init();
         void                SO2Init();
+        void                NO2Init();
         void                GPSInit();
         bool                BMEInit();
         void                DHTInit();
@@ -217,6 +223,7 @@ class CAmbientMonitor
         int                 ReadCO2PPM();
         float               ReadO3();
         float               ReadSO2();
+        float               ReadNO2();
         float               ReadSoundLevel();
         void                ReadGPSInfo(double* lat,double* lng,double* meters);
         bool                ReadBME(float* pressure,float* voc);
@@ -237,6 +244,7 @@ class CAmbientMonitor
         CO2Sensor           CO2;
         DFRobot_OzoneSensor O3;
         SO2                 so2;
+        NO2                 no2;
         CUblox              GPS;    // UART2
         Adafruit_BME680     bme;    // I2C
         SPS30               sps30;  // UART1

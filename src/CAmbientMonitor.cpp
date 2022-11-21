@@ -4,7 +4,8 @@ CAmbientMonitor::CAmbientMonitor():
  CO(BOARD,Voltage_Resolution,ADC_Bit_Resolution,CO_ADC_PIN,COTYPE)
 ,CH4(BOARD,Voltage_Resolution,ADC_Bit_Resolution,CH4_ADC_PIN,CH4TYPE)
 ,CO2(CO2PIN,INERTIA,TRIES)
-,so2(SO2_ADC_PIN,0,SF)
+,so2(SO2_ADC_PIN,0,SO2SF)
+,no2(NO2_ADC_PIN,0,NO2SF)
 ,GPS(UBlox_UART)
 ,DHT(DHTPIN, DHTTYPE)
 {
@@ -42,6 +43,8 @@ bool CAmbientMonitor::InitGasSensorChannel()
   CH4Init();
   Serial.printf("initalize SO2 ... \n");
   SO2Init();
+  Serial.printf("initalize NO2 ... \n");
+  NO2Init();
   InitADXL();
   memset(m_GasSensorChReading,0,GAS_SENSOR_READING_SIZE);
   return Ret;
@@ -164,7 +167,15 @@ void CAmbientMonitor::SO2Init()
   so2.pVcc = 3.3;  //analogRead Reference Voltage, maybe measure Aref??
   so2.pVsup = 3.3;  //voltage supplied to V+ of ULP, default is 3.3 Volts, probably should measure this as well.
   //so2.pVref_set = 1.655 * 1000.0 ; // vref meaured from vref pin of the sensor in mv
-  so2.setTSpan(0, "LOW"); // configure temprature coofficient for low temprature betweeen 0 - 20 C degree
+  //so2.setTSpan(0, "LOW"); // configure temprature coofficient for low temprature betweeen 0 - 20 C degree
+  //so2.setTSpan(25, "HIGH");
+}
+void CAmbientMonitor::NO2Init()
+{
+  no2.pVcc = 3.3;  //analogRead Reference Voltage, maybe measure Aref??
+  no2.pVsup = 3.3;  //voltage supplied to V+ of ULP, default is 3.3 Volts, probably should measure this as well.
+  //so2.pVref_set = 1.655 * 1000.0 ; // vref meaured from vref pin of the sensor in mv
+  //so2.setTSpan(0, "LOW"); // configure temprature coofficient for low temprature betweeen 0 - 20 C degree
   //so2.setTSpan(25, "HIGH");
 }
 //------------------------------------------------------------
@@ -325,6 +336,7 @@ void CAmbientMonitor::ReadGasSensorChannel()
   m_GasSensorChReading[Gas_Sensor_field_CH4-1] = ReadCH4PPM() /*+ float(200.0)*/;
   m_GasSensorChReading[Gas_Sensor_field_O3-1] =  ReadO3();
   m_GasSensorChReading[Gas_Sensor_field_SO2-1] = ReadSO2();
+  m_GasSensorChReading[Gas_Sensor_field_NO2-1] = ReadNO2();
   m_GasSensorChReading[Gas_Sensor_field_power_monitor-1] =  ReadPowerPin();
   SetfieldMultiple(m_GasSensorChReading,GAS_SENSOR_READING_SIZE);
   ThingSpeak.setLatitude((float)m_MovementSensorChReading[Movement_field_Latitude-1]);
@@ -472,6 +484,34 @@ float CAmbientMonitor::ReadSO2()
   //}
   //zeroCount++;
   return so2.pX/1000.0;  // convert ppb to ppm
+
+}
+float CAmbientMonitor::ReadNO2()
+{
+  static int zeroCount=0;
+  Serial.printf("pIzero =%f \n",no2.pIzero);
+  Serial.printf("pTzero =%f \n",no2.pTzero);
+  Serial.printf("sensitivity code =%f \n",no2.pSf);
+  //Serial.printf("pVref_set =%f \n",so2.pVref_set);
+  Serial.printf("Begin ADC Driver ...\n");
+  ads.begin(); // begin externa adc
+  Serial.printf("Read NO2 from ADC Driver\n");
+  int16_t adc1 = ads.readADC_SingleEnded(NO2_ADC_PIN);
+  Serial.printf("NO2 samples = %f\n",(float)adc1);
+  No2.setADCSamples((float)adc1);
+  No2.getIgas(1.542 * 1000.0);
+  No2.getTemp(1);
+  Serial.printf("no2.pVgas = %f\n",no2.pVgas);
+  Serial.printf("no2.pInA = %f\n",no2.pInA);
+  Serial.printf("pT = %f\n",so2.pT);
+  Serial.printf("no2.pX = %f\n",no2.pX/1000.0);
+  so2.getConc(no2.pT);
+  //if(zeroCount<1)
+  //{
+    //so2.zero(); //Uses last values read of Izero and Tzero
+  //}
+  //zeroCount++;
+  return no2.pX/1000.0;  // convert ppb to ppm
 
 }
 //-----------------------------------------------------------
