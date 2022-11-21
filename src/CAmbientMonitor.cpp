@@ -468,7 +468,7 @@ float CAmbientMonitor::ReadSO2()
   so2.getConc(so2.pT);
   //if(zeroCount<1)
   //{
-    so2.zero(); //Uses last values read of Izero and Tzero
+    //so2.zero(); //Uses last values read of Izero and Tzero
   //}
   //zeroCount++;
   return so2.pX/1000.0;  // convert ppb to ppm
