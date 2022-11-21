@@ -471,7 +471,7 @@ float CAmbientMonitor::ReadSO2()
   int16_t adc3 = ads.readADC_SingleEnded(SO2_ADC_PIN);
   Serial.printf("SO2 samples = %f\n",(float)adc3);
   so2.setADCSamples((float)adc3);
-  so2.getIgas(1.655 * 1000.0);
+  so2.getIgas(1.655);
   so2.getTemp(1);
   Serial.printf("so2.pVgas = %f\n",so2.pVgas);
   Serial.printf("so2.pInA = %f\n",so2.pInA);
@@ -499,7 +499,7 @@ float CAmbientMonitor::ReadNO2()
   int16_t adc1 = ads.readADC_SingleEnded(NO2_ADC_PIN);
   Serial.printf("NO2 samples = %f\n",(float)adc1);
   No2.setADCSamples((float)adc1);
-  No2.getIgas(1.542 * 1000.0);
+  No2.getIgas(1.542);
   No2.getTemp(1);
   Serial.printf("no2.pVgas = %f\n",no2.pVgas);
   Serial.printf("no2.pInA = %f\n",no2.pInA);
