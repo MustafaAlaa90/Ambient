@@ -162,7 +162,7 @@ void ULP::getIgas(float pvrev)
   // float Cnts = float (anaCounts) / float(i);
 
   Serial.printf("pVref = %f\n",pvrev);
-  pVgas = adcSamples * pVcc * / 32768.0; // in V
+  pVgas = adcSamples * pVcc / 32768.0; // in V
   pInA = (pVgas - pvrev) /*/ pGain * 1000.0*/;   // in nA
 }
 
@@ -173,7 +173,7 @@ void ULP::getConc(float t)
   float Sens = pSf /** (1.0 + pTc * (t - 20.0))*/;
   Serial.printf("nA = %f, Sens = %f\n",nA,Sens);
   //pX = nA / Sens * 1000.0; // output in ppb
-  pX= ( nA / ( pGain * Sens ) ) * 1000.0F * 1000.0F
+  pX= ( nA / ( pGain * Sens ) ) * 1000.0F * 1000.0F;
 }
 
 float ULP::expI(float T)
