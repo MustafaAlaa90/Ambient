@@ -163,14 +163,14 @@ void ULP::getIgas(float pvrev)
 
   Serial.printf("pVref = %f\n",pvrev);
   pVgas = adcSamples * pVcc / 32768.0; // in V
-  pInA = (pVgas - pvrev) /*/ pGain * 1000.0*/;   // in nA
+  pInA = abs(pVgas - pvrev) /*/ pGain * 1000.0*/;   // in nA
 }
 
 void ULP::getConc(float t)
 {
   Serial.printf("pT inside getConc= %f\n",pT);
   float nA = pInA /*- pIzero * expI(pT - pTzero)*/;
-  float Sens = pSf /** (1.0 + pTc * (t - 20.0))*/;
+  float Sens = abs(pSf) /** (1.0 + pTc * (t - 20.0))*/;
   Serial.printf("nA = %f, Sens = %f\n",nA,Sens);
   //pX = nA / Sens * 1000.0; // output in ppb
   pX= ( nA / ( pGain * Sens ) ) * 1000.0F * 1000.0F;
