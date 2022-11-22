@@ -498,14 +498,14 @@ float CAmbientMonitor::ReadNO2()
   Serial.printf("Read NO2 from ADC Driver\n");
   int16_t adc1 = ads.readADC_SingleEnded(NO2_ADC_PIN);
   Serial.printf("NO2 samples = %f\n",(float)adc1);
-  No2.setADCSamples((float)adc1);
-  No2.getIgas(1.542);
-  No2.getTemp(1);
+  no2.setADCSamples((float)adc1);
+  no2.getIgas(1.542);
+  no2.getTemp(1);
   Serial.printf("no2.pVgas = %f\n",no2.pVgas);
   Serial.printf("no2.pInA = %f\n",no2.pInA);
   Serial.printf("pT = %f\n",so2.pT);
   Serial.printf("no2.pX = %f\n",no2.pX/1000.0);
-  so2.getConc(no2.pT);
+  no2.getConc(no2.pT);
   //if(zeroCount<1)
   //{
     //so2.zero(); //Uses last values read of Izero and Tzero
